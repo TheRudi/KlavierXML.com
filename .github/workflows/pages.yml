@@ -26,7 +26,7 @@ jobs:
       - name: Prepare site
         run: |
           mkdir _site
-          cp index.html licenses.html exchange.html styles.css app.js player.js exchange.js jszip.min.js favicon.svg KlavierLicense.txt _site/
+          cp index.html licenses.html exchange.html styles.css app.js player.js exchange.js favicon.svg KlavierLicense.txt _site/
           if [ -f CNAME ]; then cp CNAME _site/; fi
           cp -r scores piano fonts videos exchange _site/
           touch _site/.nojekyll
