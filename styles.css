@@ -617,6 +617,93 @@ button {
   font-weight: 600;
 }
 
+.point-list a,
+.get-steps a,
+.section-copy a {
+  color: var(--amber);
+  text-decoration: underline;
+  text-decoration-color: rgba(224, 176, 122, 0.4);
+  text-underline-offset: 0.16em;
+}
+
+.point-list a:hover,
+.get-steps a:hover,
+.section-copy a:hover {
+  color: #e8bc8b;
+}
+
+.get-paths {
+  display: grid;
+  gap: 1.5rem;
+  margin-top: 2.5rem;
+}
+
+@media (min-width: 800px) {
+  .get-paths {
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+}
+
+.get-path {
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--ink-line);
+}
+
+.get-path-index {
+  margin: 0 0 0.75rem;
+  color: var(--teal);
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 600;
+}
+
+.get-path h3 {
+  margin: 0 0 1rem;
+  font-size: 1.2rem;
+  font-weight: 560;
+  line-height: 1.25;
+}
+
+.get-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.85rem;
+  counter-reset: get-step;
+}
+
+.get-steps li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem;
+  align-items: start;
+  color: var(--ivory-mute);
+  font-size: 0.98rem;
+}
+
+.get-steps li::before {
+  counter-increment: get-step;
+  content: counter(get-step);
+  display: grid;
+  place-items: center;
+  width: 1.45rem;
+  height: 1.45rem;
+  margin-top: 0.12rem;
+  border-radius: 50%;
+  border: 1px solid rgba(224, 176, 122, 0.35);
+  color: var(--amber);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.section-copy code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  color: var(--ivory);
+}
+
 .privacy-copy {
   margin: 0;
   max-width: 40rem;
