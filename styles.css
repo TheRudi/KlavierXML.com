@@ -676,11 +676,22 @@ button {
 
 .get-steps li {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 0.75rem;
   align-items: start;
   color: var(--ivory-mute);
   font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.get-steps li > span {
+  min-width: 0;
+}
+
+.get-steps a {
+  display: inline;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .get-steps li::before {
