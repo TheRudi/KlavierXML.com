@@ -2,11 +2,23 @@
   "updated": "2026-10-02",
   "scores": [
     {
+      "id": "shared-1790979748903-q0bgqd",
+      "title": "Free trial Bohemian1",
+      "composer": "Queen",
+      "credit": "Converted to MXL · shared exchange",
+      "filename": "Free-trial-Bohemian1.mxl",
+      "format": "mxl",
+      "bytes": 2931,
+      "added": "2026-10-02",
+      "file": "files/shared-1790979748903-q0bgqd.mxl",
+      "license": "Uploaded by a community member. Only share files you have rights to distribute."
+    },
+    {
       "id": "shared-1790979610167-qlh2dq",
-      "title": "Joplin The Entertainer ⎕",
+      "title": "Joplin The Entertainer â",
       "composer": "Uploaded score",
       "credit": "Shared exchange",
-      "filename": "Joplin-The_Entertainer-⎕.mxl",
+      "filename": "Joplin-The_Entertainer-â.mxl",
       "format": "mxl",
       "bytes": 19952,
       "added": "2026-10-02",
