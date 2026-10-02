@@ -26,9 +26,9 @@ jobs:
       - name: Prepare site
         run: |
           mkdir _site
-          cp index.html styles.css app.js favicon.svg _site/
+          cp index.html styles.css app.js player.js favicon.svg _site/
           if [ -f CNAME ]; then cp CNAME _site/; fi
-          cp -r scores _site/scores
+          cp -r scores piano fonts _site/
           touch _site/.nojekyll
       - name: Setup Pages
         uses: actions/configure-pages@v5

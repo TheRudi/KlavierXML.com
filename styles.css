@@ -1,3 +1,19 @@
+@font-face {
+  font-family: "Cormorant Garamond";
+  font-style: normal;
+  font-weight: 500 700;
+  font-display: swap;
+  src: url("fonts/cormorant-garamond-latin.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Outfit";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("fonts/outfit-latin.woff2") format("woff2");
+}
+
 :root {
   --ink: #0c0f14;
   --ink-lift: #141922;
@@ -86,14 +102,12 @@ button {
 }
 
 .site-header {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  position: relative;
   z-index: 20;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
   padding: 1.25rem clamp(1.25rem, 4vw, 3rem);
 }
 
@@ -111,7 +125,9 @@ button {
 
 .nav-links {
   display: flex;
-  gap: 1.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem 1.15rem;
   align-items: center;
   font-size: 0.92rem;
   color: var(--ivory-soft);
@@ -135,11 +151,10 @@ button {
 
 .hero {
   position: relative;
-  min-height: 100vh;
-  min-height: 100dvh;
-  display: grid;
-  align-items: end;
-  padding: clamp(5.5rem, 12vh, 7rem) clamp(1.25rem, 4vw, 3rem) 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  padding: 0.5rem clamp(1.25rem, 4vw, 3rem) 1.5rem;
 }
 
 .hero-copy {
@@ -224,32 +239,19 @@ button {
 }
 
 .piano-stage {
-  position: absolute;
-  inset: 0;
+  position: relative;
   z-index: 1;
   display: flex;
-  align-items: flex-end;
   justify-content: center;
-  pointer-events: none;
+  width: min(1120px, 100%);
+  margin: 0 auto;
   opacity: 0;
-  animation: fade 1.2s var(--ease-out) 0.35s forwards;
-}
-
-.piano-stage::before {
-  content: "";
-  position: absolute;
-  inset: auto 0 0;
-  height: 55%;
-  background: linear-gradient(to top, rgba(12, 15, 20, 0.92) 10%, transparent 100%);
-  z-index: 2;
+  animation: fade 1s var(--ease-out) 0.2s forwards;
 }
 
 .piano {
-  width: min(1200px, 160vw);
-  transform: translateY(8%) rotateX(18deg);
-  transform-origin: center bottom;
-  filter: drop-shadow(0 30px 60px var(--shadow));
-  perspective: 1000px;
+  width: 100%;
+  filter: drop-shadow(0 18px 30px var(--shadow));
 }
 
 .piano-body {
@@ -257,7 +259,7 @@ button {
   padding: 1.1rem 1.1rem 0.85rem;
   border-radius: 0.65rem 0.65rem 0.2rem 0.2rem;
   background:
-    linear-gradient(180deg, #2a303a 0%, #151920 35%, #0d1016 100%);
+    linear-gradient(180deg, #6a5340 0%, #3d2e22 28%, #241910 100%);
   border: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
@@ -274,7 +276,7 @@ button {
 .keys {
   position: relative;
   display: flex;
-  height: clamp(7.5rem, 18vw, 11rem);
+  height: clamp(11rem, 28vw, 16rem);
   user-select: none;
 }
 
@@ -515,6 +517,62 @@ button {
   align-self: flex-start;
 }
 
+.score-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.play-status {
+  min-height: 1.3rem;
+  margin: 0.85rem 0 0;
+  color: var(--ivory-mute);
+  font-size: 0.88rem;
+}
+
+.point-list {
+  margin: 1.75rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.9rem;
+  counter-reset: point;
+}
+
+.point-list li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.85rem;
+  align-items: start;
+  color: var(--ivory-soft);
+}
+
+.point-list li::before {
+  counter-increment: point;
+  content: counter(point);
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  margin-top: 0.1rem;
+  border-radius: 50%;
+  background: rgba(224, 176, 122, 0.16);
+  color: var(--amber);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.privacy-copy {
+  margin: 0;
+  max-width: 40rem;
+  color: var(--ivory-soft);
+  font-size: 1.05rem;
+}
+
+.privacy-copy + .privacy-copy {
+  margin-top: 0.9rem;
+}
+
 .score-preview {
   position: relative;
   min-height: 16rem;
@@ -657,22 +715,9 @@ button {
   }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 860px) {
   .nav-links a:not(.nav-cta) {
     display: none;
-  }
-
-  .hero {
-    align-items: center;
-  }
-
-  .hero-copy {
-    padding-bottom: 42vh;
-  }
-
-  .piano {
-    width: 190vw;
-    transform: translateY(18%) rotateX(12deg);
   }
 }
 

@@ -18,15 +18,21 @@
   if (!keysRoot) return;
 
   const whiteCount = 21;
-  const blackPattern = [1, 1, 0, 1, 1, 1, 0]; // after white keys C..B
-
+  const whitePitch = [0, 2, 4, 5, 7, 9, 11];
   const whites = [];
-  for (let i = 0; i < whiteCount; i += 1) {
-    const key = document.createElement("div");
-    key.className = "white-key";
-    key.dataset.index = String(i);
-    keysRoot.appendChild(key);
-    whites.push(key);
+  const keyByMidi = new Map();
+  const held = new Map();
+  let midi = 48; // C3
+  while (whites.length < whiteCount) {
+    if (whitePitch.includes(midi % 12)) {
+      const key = document.createElement("div");
+      key.className = "white-key";
+      key.dataset.midi = String(midi);
+      keysRoot.appendChild(key);
+      whites.push(key);
+      keyByMidi.set(midi, key);
+    }
+    midi += 1;
   }
 
   const blackLayer = document.createElement("div");
@@ -35,16 +41,44 @@
 
   const blacks = [];
   const whiteWidth = 100 / whiteCount;
-
-  for (let i = 0; i < whiteCount - 1; i += 1) {
-    const step = i % 7;
-    if (!blackPattern[step]) continue;
+  whites.forEach((white, index) => {
+    if (index === whites.length - 1) return;
+    const whiteMidi = Number(white.dataset.midi);
+    const blackMidi = whiteMidi + 1;
+    if (whitePitch.includes(blackMidi % 12)) return;
     const key = document.createElement("div");
     key.className = "black-key";
-    key.style.left = `calc(${(i + 1) * whiteWidth}% - ${whiteWidth * 0.31}%)`;
+    key.dataset.midi = String(blackMidi);
+    key.style.width = `${whiteWidth * 0.58}%`;
+    key.style.left = `calc(${(index + 1) * whiteWidth}% - ${whiteWidth * 0.29}%)`;
     blackLayer.appendChild(key);
     blacks.push(key);
-  }
+    keyByMidi.set(blackMidi, key);
+  });
+
+  window.KlavierKeys = {
+    on(note) {
+      const el = keyByMidi.get(note);
+      if (!el) return;
+      held.set(note, (held.get(note) || 0) + 1);
+      el.classList.add("lit");
+    },
+    off(note) {
+      const next = (held.get(note) || 1) - 1;
+      if (next > 0) {
+        held.set(note, next);
+        return;
+      }
+      held.delete(note);
+      keyByMidi.get(note)?.classList.remove("lit");
+    },
+    suspendDemo: false,
+    clear() {
+      held.clear();
+      this.suspendDemo = false;
+      keyByMidi.forEach((el) => el.classList.remove("lit"));
+    },
+  };
 
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (!reduceMotion) {
@@ -65,6 +99,7 @@
     };
 
     const playPhrase = () => {
+      if (window.KlavierKeys?.suspendDemo) return;
       clearLit();
       phrase.forEach((step) => {
         window.setTimeout(() => {
