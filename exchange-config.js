@@ -1,4 +1,13 @@
-// Publish token so uploads land in exchange/ for every visitor.
-// This installation token expires about hourly; replace with a fine-grained
-// PAT (Contents: Read and write) via repo secret EXCHANGE_TOKEN for lasting use.
-window.KlavierExchangeConfig = {"token": "ghs_1210556_eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdXRobmQiLCJjdHgiOiI2X3FTYUtpU0s2dmJmczZ5Wm12eDZ0SHJackMwbmhfXzVPLXNfNElfWWJBeGg4QjBpR2lIQVhibzdKeEttQXciLCJleHAiOjE3OTA5ODMxMTksImlhdCI6MTc5MDk3OTUxOSwiaXNzIjoiZ2l0aHViIiwianRpIjoiYzI2NTY4ZjktOWU2ZC00ZDFjLWI0ZTgtODQxODhiYmYxYTk4IiwidmVyIjozfQ.gsxGAbt9LpDbCl1M2jlIo3IHtpO8ld_-5P2BkIcJpoj0tNpUS8gnuC-ARZhj0MTnPDB2Ulxm1_V4pCRJma981g", "branch": "cursor/klavierxml-website-4be4"};
+// Upload publish credentials for the shared MusicXML exchange.
+//
+// GitHub Pages is fine for hosting this site. Browser uploads need a
+// long-lived fine-grained PAT so they do not expire every hour:
+//   GitHub → Settings → Developer settings → Fine-grained tokens
+//   Resource owner: TheRudi
+//   Repository access: Only TheRudi/KlavierXML.com
+//   Permissions → Repository → Contents: Read and write
+// Then set token below (or repo secret EXCHANGE_TOKEN for Actions inject).
+window.KlavierExchangeConfig = {
+  "token": "ghs_1210556_eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdXRobmQiLCJjdHgiOiI0YVZZbnVEZ3EwVGZTM3pjSWs1MWNPNFJ3Zk9WcFk0SENRRXZ1UHd2NVNuV1h0OGlucWIwc25KWmFmcTRHUWciLCJleHAiOjE3OTA5ODgzMDcsImlhdCI6MTc5MDk4NDcwNywiaXNzIjoiZ2l0aHViIiwianRpIjoiOWU4YjE5ZDItZTg0OS00OTc3LTk2N2ItYzRkZDZhYWUxNmI4IiwidmVyIjozfQ.UxsTmwpV63__gtKQsZgj77YD4rAajGMEjzziw-nzTDjEdvgl8a5NwG5EyUzRuYxkxRaIa9rgSomg8ohf11PT5A",
+  "branch": "cursor/klavierxml-website-4be4"
+};

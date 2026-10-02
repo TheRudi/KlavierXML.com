@@ -178,7 +178,7 @@
       const detail = await res.text();
       if (res.status === 401 || res.status === 403) {
         throw new Error(
-          "Publish credentials expired or are invalid. Update the exchange publish token and try again."
+          "Publish credentials expired. Add a fine-grained GitHub PAT (Contents: Read and write) to exchange-config.js."
         );
       }
       throw new Error(
