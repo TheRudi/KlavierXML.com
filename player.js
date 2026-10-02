@@ -177,7 +177,7 @@
     const url = button.dataset.play;
     const card = button.closest(".score-card");
     const status = card.querySelector(".play-status");
-    if (current?.button === button) {
+    if (button.getAttribute("aria-pressed") === "true" || current?.button === button) {
       stop();
       return;
     }
@@ -256,9 +256,15 @@
     }
   }
 
+  let lastClickAt = 0;
+  let lastClickButton = null;
   document.addEventListener("click", (event) => {
     const button = event.target.closest("[data-play]");
     if (!button) return;
+    const now = performance.now();
+    if (button === lastClickButton && now - lastClickAt < 350) return;
+    lastClickAt = now;
+    lastClickButton = button;
     play(button);
   });
 
