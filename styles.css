@@ -245,8 +245,6 @@ button {
   justify-content: center;
   width: min(1120px, 100%);
   margin: 0 auto;
-  opacity: 0;
-  animation: fade 1s var(--ease-out) 0.2s forwards;
 }
 
 .piano {
