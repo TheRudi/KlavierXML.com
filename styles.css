@@ -759,6 +759,27 @@ button {
   color: var(--amber);
 }
 
+.contact-line {
+  margin: 0.85rem 0 0;
+  color: var(--ivory-mute);
+  font-size: 0.95rem;
+}
+
+.contact-line a {
+  color: var(--amber);
+  text-decoration: underline;
+  text-decoration-color: rgba(224, 176, 122, 0.4);
+  text-underline-offset: 0.16em;
+}
+
+.contact-line a:hover {
+  color: #e8bc8b;
+}
+
+.site-footer .contact-line {
+  margin-top: 0;
+}
+
 .thanks-home {
   max-width: 40rem;
 }
