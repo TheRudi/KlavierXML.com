@@ -115,6 +115,36 @@
     window.setInterval(playPhrase, 5200);
   }
 
+  const clipVideos = [...document.querySelectorAll(".clip video")];
+  const clipButtons = [...document.querySelectorAll(".clip-sound")];
+  if (reduceMotion) {
+    clipVideos.forEach((video) => {
+      video.removeAttribute("autoplay");
+      video.pause();
+    });
+  }
+  const setSound = (active) => {
+    clipVideos.forEach((video, index) => {
+      const button = clipButtons[index];
+      const on = video === active;
+      video.muted = !on;
+      if (button) {
+        button.setAttribute("aria-pressed", on ? "true" : "false");
+        button.textContent = on ? "Sound on" : "Sound off";
+      }
+      if (on) {
+        video.volume = 0.9;
+        video.play();
+      }
+    });
+  };
+  clipButtons.forEach((button, index) => {
+    button.addEventListener("click", () => {
+      const video = clipVideos[index];
+      setSound(video.muted ? video : null);
+    });
+  });
+
   const steps = document.querySelectorAll(".flow-step");
   if ("IntersectionObserver" in window && steps.length) {
     const observer = new IntersectionObserver(

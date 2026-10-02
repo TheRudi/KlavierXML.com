@@ -28,7 +28,7 @@ jobs:
           mkdir _site
           cp index.html styles.css app.js player.js favicon.svg _site/
           if [ -f CNAME ]; then cp CNAME _site/; fi
-          cp -r scores piano fonts _site/
+          cp -r scores piano fonts videos _site/
           touch _site/.nojekyll
       - name: Setup Pages
         uses: actions/configure-pages@v5
