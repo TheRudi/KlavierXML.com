@@ -2,6 +2,19 @@
   "updated": "2026-10-02",
   "scores": [
     {
+      "id": "shared-1790974039003-5wji6w",
+      "title": "Public Shared Song",
+      "composer": "Exchange Tester",
+      "credit": "Converted to MXL · shared exchange",
+      "filename": "pub3.mxl",
+      "format": "mxl",
+      "bytes": 507,
+      "ownerEmailHash": "aff4cb8343be6a4554da109059394e1c79a2769e21c507b906fabbd1830889a8",
+      "added": "2026-10-02",
+      "file": "files/shared-1790974039003-5wji6w.mxl",
+      "license": "Uploaded by a community member. Only share files you have rights to distribute."
+    },
+    {
       "id": "shared-demo-birthday",
       "title": "Happy Birthday",
       "composer": "Patty & Mildred Hill",
