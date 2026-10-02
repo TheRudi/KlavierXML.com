@@ -255,7 +255,6 @@
   form.addEventListener("reset", () => {
     window.setTimeout(() => {
       fileNameEl.textContent = "No file chosen";
-      setStatus("");
     }, 0);
   });
 
@@ -310,19 +309,19 @@
       try {
         shared = await maybeEmailShare(file, title, composer);
       } catch (err) {
-        setStatus(err.message, "error");
         form.reset();
         fileNameEl.textContent = "No file chosen";
+        setStatus(err.message, "error");
         return;
       }
 
+      form.reset();
+      fileNameEl.textContent = "No file chosen";
       setStatus(
         shared
           ? "Saved on this device and sent for community review."
           : "Saved on this device. You can download it below."
       );
-      form.reset();
-      fileNameEl.textContent = "No file chosen";
     } catch (err) {
       setStatus(err.message || "Upload failed.", "error");
     }

@@ -1326,10 +1326,6 @@ button {
 }
 
 .upload-status[data-kind="error"] {
-  color: #e2a agaa;
-}
-
-.upload-status[data-kind="error"] {
   color: #e7a3a3;
 }
 
