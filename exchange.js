@@ -4,6 +4,7 @@
   const MAX_BYTES = 8 * 1024 * 1024;
   const MAX_FILES = 100;
   const ALLOWED = new Set(["xml", "musicxml", "mxl"]);
+  const REMOVE_MASTER_PASSWORD = "RAL";
 
   const listEl = document.getElementById("exchange-list");
   const emptyEl = document.getElementById("library-empty");
@@ -13,10 +14,16 @@
   const fileNameEl = document.getElementById("file-name");
   const titleInput = document.getElementById("score-title");
   const composerInput = document.getElementById("score-composer");
+  const emailInput = document.getElementById("score-email");
   const shareInput = document.getElementById("score-share");
   const searchInput = document.getElementById("library-search");
   const countEl = document.getElementById("library-count");
   const tabs = document.querySelectorAll(".library-tab");
+  const removeModal = document.getElementById("remove-modal");
+  const removeForm = document.getElementById("remove-form");
+  const removeSecretInput = document.getElementById("remove-secret");
+  const removeScoreTitle = document.getElementById("remove-score-title");
+  const removeError = document.getElementById("remove-error");
 
   if (!listEl || !form) return;
 
@@ -24,6 +31,52 @@
   let localScores = [];
   let activeTab = "all";
   let query = "";
+  let pendingRemoveId = null;
+
+  const normalizeEmail = (value) => String(value || "").trim().toLowerCase();
+
+  const isValidEmail = (value) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(value));
+
+  const hashEmail = async (email) => {
+    const data = new TextEncoder().encode(normalizeEmail(email));
+    const digest = await crypto.subtle.digest("SHA-256", data);
+    return [...new Uint8Array(digest)]
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("");
+  };
+
+  const canRemoveScore = async (item, secret) => {
+    const value = String(secret || "").trim();
+    if (!value) return false;
+    if (value === REMOVE_MASTER_PASSWORD) return true;
+    if (!item.ownerEmailHash) return false;
+    if (!isValidEmail(value)) return false;
+    const hashed = await hashEmail(value);
+    return hashed === item.ownerEmailHash;
+  };
+
+  const openRemoveModal = (item) => {
+    pendingRemoveId = item.id;
+    if (removeScoreTitle) removeScoreTitle.textContent = item.title || "this score";
+    if (removeSecretInput) removeSecretInput.value = "";
+    if (removeError) {
+      removeError.hidden = true;
+      removeError.textContent = "";
+    }
+    if (removeModal) removeModal.hidden = false;
+    window.setTimeout(() => removeSecretInput?.focus(), 0);
+  };
+
+  const closeRemoveModal = () => {
+    pendingRemoveId = null;
+    if (removeModal) removeModal.hidden = true;
+    if (removeSecretInput) removeSecretInput.value = "";
+    if (removeError) {
+      removeError.hidden = true;
+      removeError.textContent = "";
+    }
+  };
 
   const formatBytes = (n) => {
     if (!n && n !== 0) return "";
@@ -328,6 +381,17 @@
 
     setStatus("Converting XML to MXL…");
     const converted = await xmlToMxl(buffer, file.name);
+
+    // Verify the archive can be read the same way Klavier reads MXL files.
+    if (window.KlavierPlayer?.unzipXml) {
+      const xml = await window.KlavierPlayer.unzipXml(
+        await converted.blob.arrayBuffer()
+      );
+      if (!/score-partwise|score-timewise/i.test(xml)) {
+        throw new Error("Converted MXL could not be verified.");
+      }
+    }
+
     return { ...converted, converted: true };
   };
 
@@ -398,11 +462,8 @@
         removeBtn.type = "button";
         removeBtn.className = "btn btn-ghost";
         removeBtn.textContent = "Remove";
-        removeBtn.addEventListener("click", async () => {
-          await deleteLocal(item.id);
-          localScores = await loadLocal();
-          render();
-          setStatus("Removed from this device.");
+        removeBtn.addEventListener("click", () => {
+          openRemoveModal(item);
         });
         actions.append(removeBtn);
       }
@@ -427,13 +488,13 @@
       reader.readAsArrayBuffer(file);
     });
 
-  const maybeEmailShare = async (fileOrBlob, filename, title, composer) => {
+  const maybeEmailShare = async (fileOrBlob, filename, title, composer, email) => {
     if (!shareInput?.checked) return false;
     const body = new FormData();
     body.append("_subject", `KlavierXML exchange upload: ${title}`);
     body.append(
       "message",
-      `A MusicXML/MXL score was offered to the community library.\n\nTitle: ${title}\nComposer/credit: ${composer || "(none)"}\nFilename: ${filename}\nSize: ${fileOrBlob.size} bytes\n`
+      `A MusicXML/MXL score was offered to the community library.\n\nTitle: ${title}\nComposer/credit: ${composer || "(none)"}\nUploader email: ${email}\nFilename: ${filename}\nSize: ${fileOrBlob.size} bytes\n`
     );
     body.append("score", fileOrBlob, filename);
     body.append("_template", "table");
@@ -491,11 +552,18 @@
 
     const title = (titleInput.value || titleFromFile(file.name)).trim();
     const composer = (composerInput.value || "").trim();
+    const email = normalizeEmail(emailInput?.value);
+    if (!isValidEmail(email)) {
+      setStatus("Add a valid email so this score can be removed later.", "error");
+      emailInput?.focus();
+      return;
+    }
 
     try {
       setStatus(ext === "mxl" ? "Uploading…" : "Converting XML to MXL…");
       const buffer = await readFile(file);
       const prepared = await prepareScoreFile(file, ext, buffer);
+      const ownerEmailHash = await hashEmail(email);
       const record = {
         id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         title,
@@ -509,6 +577,7 @@
         format: "mxl",
         bytes: prepared.bytes,
         blob: prepared.blob,
+        ownerEmailHash,
         added: new Date().toISOString().slice(0, 10),
         license:
           "Uploaded by you. Only share files you have rights to distribute.",
@@ -554,7 +623,8 @@
           prepared.blob,
           record.filename,
           title,
-          composer
+          composer,
+          email
         );
       } catch (err) {
         form.reset();
