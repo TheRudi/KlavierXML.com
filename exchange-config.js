@@ -1,9 +1,10 @@
-// Optional publish token for seamless shared uploads (no GitHub issue step).
-// Create a fine-grained PAT with Contents: Read and write on this repository only,
-// then either:
-//   1) set window.KlavierExchangeConfig below, or
-//   2) run localStorage.setItem('klavierxml-exchange-token', 'YOUR_TOKEN') in the browser.
-// Never use a classic PAT with broad access. Rotate if exposed.
+// Optional publish token for seamless shared uploads (skips the GitHub issue step).
+// Prefer a fine-grained PAT limited to this repository only.
+// Warning: a Contents write token in the browser can modify repository files.
+// The safer default is the issue-based publish Action (no token required).
+// Usage:
+//   window.KlavierExchangeConfig = { token: "YOUR_TOKEN", branch: "main" };
+// or: localStorage.setItem("klavierxml-exchange-token", "YOUR_TOKEN");
 window.KlavierExchangeConfig = {
   // branch: "main",
   // token: "",
