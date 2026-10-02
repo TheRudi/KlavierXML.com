@@ -1,7 +1,7 @@
 (() => {
   const DB_NAME = "klavierxml-exchange";
   const STORE = "scores";
-  const MAX_BYTES = 8 * 1024 * 1024;
+  const MAX_BYTES = 50 * 1024;
   const MAX_FILES = 100;
   const ALLOWED = new Set(["xml", "musicxml", "mxl"]);
   const EXCHANGE_REPO = "TheRudi/KlavierXML.com";
@@ -19,7 +19,6 @@
   const fileNameEl = document.getElementById("file-name");
   const titleInput = document.getElementById("score-title");
   const composerInput = document.getElementById("score-composer");
-  const shareInput = document.getElementById("score-share");
   const searchInput = document.getElementById("library-search");
   const countEl = document.getElementById("library-count");
   const tabs = document.querySelectorAll(".library-tab");
@@ -654,6 +653,11 @@
   const xmlToMxl = async (xmlBuffer, originalName) => {
     const scoreText = normalizeMusicXml(xmlBuffer);
     const archive = await buildMxlArchive(scoreText);
+    if (archive.length > MAX_BYTES) {
+      throw new Error(
+        "Converted MXL is larger than 50 KB. Use a smaller score."
+      );
+    }
     const filename = `${stemFromFile(originalName) || "score"}.mxl`;
     const blob = new Blob([archive], {
       type: "application/vnd.recordare.musicxml",
@@ -667,6 +671,9 @@
       if (bytes.length < 4 || bytes[0] !== 0x50 || bytes[1] !== 0x4b) {
         throw new Error("That .mxl file is not a valid MusicXML archive.");
       }
+      if (bytes.length > MAX_BYTES) {
+        throw new Error("That MXL file is larger than 50 KB.");
+      }
       return {
         blob: new Blob([buffer], {
           type: file.type || "application/vnd.recordare.musicxml",
@@ -674,7 +681,7 @@
         filename: file.name.toLowerCase().endsWith(".mxl")
           ? file.name
           : `${stemFromFile(file.name)}.mxl`,
-        bytes: file.size,
+        bytes: bytes.length,
         converted: false,
       };
     }
@@ -803,31 +810,6 @@
       reader.readAsArrayBuffer(file);
     });
 
-  const maybeEmailShare = async (fileOrBlob, filename, title, composer) => {
-    if (!shareInput?.checked) return false;
-    const body = new FormData();
-    body.append("_subject", `KlavierXML exchange upload: ${title}`);
-    body.append(
-      "message",
-      `A MusicXML/MXL score was offered to the community library.\n\nTitle: ${title}\nComposer/credit: ${composer || "(none)"}\nFilename: ${filename}\nSize: ${fileOrBlob.size} bytes\n`
-    );
-    body.append("score", fileOrBlob, filename);
-    body.append("_template", "table");
-    body.append("_captcha", "false");
-
-    const res = await fetch("https://formsubmit.co/ajax/rudilueg@gmail.com", {
-      method: "POST",
-      body,
-      headers: { Accept: "application/json" },
-    });
-    if (!res.ok) {
-      throw new Error(
-        "Saved on this device, but sending for community review failed. Email rudilueg@gmail.com instead."
-      );
-    }
-    return true;
-  };
-
   fileInput?.addEventListener("change", () => {
     const file = fileInput.files?.[0];
     fileNameEl.textContent = file ? file.name : "No file chosen";
@@ -854,7 +836,7 @@
       return;
     }
     if (file.size > MAX_BYTES) {
-      setStatus("That file is larger than 8 MB.", "error");
+      setStatus("That file is larger than 50 KB.", "error");
       return;
     }
     if (sharedScores.length >= MAX_FILES) {
@@ -967,31 +949,11 @@
       });
       render();
 
-      let sharedMail = false;
-      try {
-        sharedMail = await maybeEmailShare(
-          prepared.blob,
-          record.filename,
-          title,
-          composer
-        );
-      } catch (err) {
-        form.reset();
-        fileNameEl.textContent = "No file chosen";
-        setStatus(
-          `Published for everyone, but notify email failed. ${err.message}`,
-          "error"
-        );
-        return;
-      }
-
       form.reset();
       fileNameEl.textContent = "No file chosen";
       const convertedNote = prepared.converted ? " Converted to MXL." : "";
       setStatus(
-        sharedMail
-          ? `Published for everyone and emailed for review.${convertedNote}`
-          : `Published for everyone. Anyone can download it below.${convertedNote}`
+        `Published for everyone. Anyone can download it below.${convertedNote}`
       );
     } catch (err) {
       setStatus(err.message || "Upload failed.", "error");
