@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>KlavierXML — Learn piano from real sheet music</title>
+    <meta
+      name="description"
+      content="KlavierXML turns MusicXML scores into guided piano practice. Import real sheet music, hear every note, and learn at your own tempo."
+    />
+    <meta property="og:title" content="KlavierXML" />
+    <meta
+      property="og:description"
+      content="Learn piano from real sheet music with MusicXML."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://klavierxml.com" />
+    <link rel="canonical" href="https://klavierxml.com/" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Outfit:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <a class="wordmark" href="/">Klavier<span>XML</span></a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#how">How it works</a>
+        <a href="#practice">Practice</a>
+        <a class="nav-cta" href="#start">Get started</a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero" aria-label="Introduction">
+        <div class="hero-copy">
+          <h1 class="brand">Klavier<span>XML</span></h1>
+          <p class="headline">Learn piano from the score itself.</p>
+          <p class="lede">
+            Import MusicXML sheet music, hear every phrase, and practice at a
+            tempo that fits your hands.
+          </p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="#start">Start practicing</a>
+            <a class="btn btn-ghost" href="#how">See how it works</a>
+          </div>
+        </div>
+
+        <div class="piano-stage" aria-hidden="true">
+          <div class="piano">
+            <div class="piano-body">
+              <div class="fallboard"></div>
+              <div class="keys" id="piano-keys"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="how">
+        <div class="section-inner">
+          <p class="section-kicker">How it works</p>
+          <h2 class="section-title">From MusicXML to muscle memory</h2>
+          <p class="section-copy">
+            KlavierXML reads the same open music format used by MuseScore,
+            Finale, and Sibelius—so you practice the piece, not a simplification.
+          </p>
+
+          <div class="flow">
+            <article class="flow-step">
+              <span class="flow-index">01</span>
+              <h3>Open a score</h3>
+              <p>
+                Drop in a `.musicxml` or `.mxl` file from IMSLP, MuseScore, or
+                your own notation software.
+              </p>
+            </article>
+            <article class="flow-step">
+              <span class="flow-index">02</span>
+              <h3>Hear the phrase</h3>
+              <p>
+                Playback follows the written music—dynamics, rhythm, and hand
+                parts stay intact while you listen.
+              </p>
+            </article>
+            <article class="flow-step">
+              <span class="flow-index">03</span>
+              <h3>Practice your way</h3>
+              <p>
+                Slow the tempo, loop a measure, or isolate one hand until the
+                passage feels natural.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section feature-band" id="practice">
+        <div class="section-inner feature-grid">
+          <div>
+            <p class="section-kicker">Practice</p>
+            <h2 class="section-title">Built for real repertoire</h2>
+            <p class="section-copy">
+              Whether you are returning to Bach or starting your first sonatina,
+              KlavierXML keeps the notation honest and the feedback immediate.
+            </p>
+            <ul class="feature-list" style="margin-top: 2rem">
+              <li>
+                <span class="feature-mark" aria-hidden="true"></span>
+                <div>
+                  <h3>True MusicXML import</h3>
+                  <p>
+                    Preserve articulations, rests, and voices instead of flattening
+                    everything into a piano-roll guess.
+                  </p>
+                </div>
+              </li>
+              <li>
+                <span class="feature-mark" aria-hidden="true"></span>
+                <div>
+                  <h3>Hands-aware practice</h3>
+                  <p>
+                    Work left and right hands separately, then bring them back
+                    together when each line is secure.
+                  </p>
+                </div>
+              </li>
+              <li>
+                <span class="feature-mark" aria-hidden="true"></span>
+                <div>
+                  <h3>Tempo you control</h3>
+                  <p>
+                    Stretch difficult bars down to a crawl, then nudge the speed
+                    up as accuracy improves.
+                  </p>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <aside class="score-preview" aria-hidden="true">
+            <div class="staff">
+              <div class="staff-line"></div>
+              <div class="staff-line"></div>
+              <div class="staff-line"></div>
+              <div class="staff-line"></div>
+              <div class="staff-line"></div>
+            </div>
+            <span class="note note-a"></span>
+            <span class="note note-b"></span>
+            <span class="note note-c"></span>
+            <span class="note note-d"></span>
+            <p class="score-label">MusicXML · live practice view</p>
+          </aside>
+        </div>
+      </section>
+
+      <section class="section cta-section" id="start">
+        <div class="section-inner">
+          <p class="section-kicker">Get started</p>
+          <h2 class="section-title">Bring a score. Find your tempo.</h2>
+          <p class="section-copy">
+            KlavierXML is taking shape as a focused practice companion for
+            pianists who want to learn from real sheet music.
+          </p>
+          <div class="cta-row">
+            <a
+              class="btn btn-primary"
+              href="https://github.com/TheRudi/KlavierXML.com"
+              rel="noopener noreferrer"
+              >Follow on GitHub</a
+            >
+            <a class="btn btn-ghost" href="mailto:hello@klavierxml.com"
+              >Say hello</a
+            >
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <p class="footer-brand">KlavierXML</p>
+        <p>Learn piano from MusicXML · © <span id="year"></span></p>
+      </div>
+    </footer>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>
