@@ -13,30 +13,44 @@
 
   const hasChild = (el, name) => [...el.children].some((node) => node.localName === name);
 
+  async function inflate(bytes) {
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+  }
+
   async function unzipXml(buffer) {
     const view = new DataView(buffer);
     const bytes = new Uint8Array(buffer);
-    let offset = 0;
+    let eocd = -1;
+    for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 65557); i -= 1) {
+      if (view.getUint32(i, true) === 0x06054b50) {
+        eocd = i;
+        break;
+      }
+    }
+    if (eocd < 0) throw new Error("This score file is not a valid MXL archive.");
+    const count = view.getUint16(eocd + 10, true);
+    let offset = view.getUint32(eocd + 16, true);
     const files = {};
-    while (offset + 30 <= bytes.length && view.getUint32(offset, true) === 0x04034b50) {
-      const method = view.getUint16(offset + 8, true);
-      const compSize = view.getUint32(offset + 18, true);
-      const nameLen = view.getUint16(offset + 26, true);
-      const extraLen = view.getUint16(offset + 28, true);
-      const nameStart = offset + 30;
-      const name = new TextDecoder().decode(bytes.subarray(nameStart, nameStart + nameLen));
-      const dataStart = nameStart + nameLen + extraLen;
+    for (let i = 0; i < count; i += 1) {
+      if (view.getUint32(offset, true) !== 0x02014b50) break;
+      const method = view.getUint16(offset + 10, true);
+      const compSize = view.getUint32(offset + 20, true);
+      const nameLen = view.getUint16(offset + 28, true);
+      const extraLen = view.getUint16(offset + 30, true);
+      const commentLen = view.getUint16(offset + 32, true);
+      const localOff = view.getUint32(offset + 42, true);
+      const name = new TextDecoder().decode(bytes.subarray(offset + 46, offset + 46 + nameLen));
+      const localNameLen = view.getUint16(localOff + 26, true);
+      const localExtraLen = view.getUint16(localOff + 28, true);
+      const dataStart = localOff + 30 + localNameLen + localExtraLen;
       const compressed = bytes.subarray(dataStart, dataStart + compSize);
       let data;
       if (method === 0) data = compressed;
-      else if (method === 8) {
-        const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
-        data = new Uint8Array(await new Response(stream).arrayBuffer());
-      } else {
-        throw new Error("This score uses an unsupported compression method.");
-      }
+      else if (method === 8) data = await inflate(compressed);
+      else throw new Error("This score uses an unsupported compression method.");
       files[name] = data;
-      offset = dataStart + compSize;
+      offset += 46 + nameLen + extraLen + commentLen;
     }
     const xmlName = Object.keys(files).find((name) => name.endsWith("score.xml") || (name.endsWith(".xml") && !name.includes("container")));
     if (!xmlName) throw new Error("No MusicXML score was found in this file.");
