@@ -43,6 +43,9 @@
         ""
     ).trim();
 
+  // Reads use the public GitHub API (no token). Sending an expired publish
+  // token makes GitHub return 401 even for public files and leaves browsers
+  // on different fallback catalogs.
   const githubHeaders = (token, extra = {}) => ({
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
@@ -55,7 +58,7 @@
       try {
         const res = await fetch(
           `https://api.github.com/repos/${EXCHANGE_REPO}/contents/exchange/shared-manifest.json?ref=${encodeURIComponent(branch)}`,
-          { headers: githubHeaders(getPublishToken()) }
+          { headers: githubHeaders() }
         );
         if (res.ok) {
           exchangeBranch = branch;
@@ -98,11 +101,12 @@
   const fetchSharedCatalog = async () => {
     await resolveExchangeBranch();
     // Prefer GitHub so new uploads are visible to every visitor immediately,
-    // even before GitHub Pages finishes rebuilding.
+    // even before GitHub Pages finishes rebuilding. Never send the publish
+    // token on reads — an expired token causes 401 and inconsistent lists.
     try {
       const res = await fetch(
         `https://api.github.com/repos/${EXCHANGE_REPO}/contents/exchange/shared-manifest.json?ref=${encodeURIComponent(exchangeBranch)}`,
-        { headers: githubHeaders(getPublishToken()), cache: "no-store" }
+        { headers: githubHeaders(), cache: "no-store" }
       );
       if (res.ok) {
         const data = await res.json();
@@ -199,7 +203,7 @@
     await resolveExchangeBranch();
     const res = await fetch(
       `https://api.github.com/repos/${EXCHANGE_REPO}/contents/${path}?ref=${encodeURIComponent(exchangeBranch)}`,
-      { headers: githubHeaders(getPublishToken()), cache: "no-store" }
+      { headers: githubHeaders(), cache: "no-store" }
     );
     if (res.status === 404) return null;
     if (!res.ok) return null;
@@ -408,28 +412,19 @@
   };
 
   const visibleItems = () => {
-    const builtinItems = builtin.map((item) => ({
-      ...item,
-      source: "builtin",
-    }));
-    const sharedItems = sharedScores.map((item) => ({
-      ...item,
-      source: "shared",
-    }));
-    const localItems = localScores.map((item) => ({
-      ...item,
-      source: "local",
-    }));
-
+    // Same library on every browser/device: shared catalog + built-ins only.
+    // Per-browser IndexedDB copies are a download cache, not a separate list.
+    const items = [
+      ...sharedScores.map((item) => ({ ...item, source: "shared" })),
+      ...builtin.map((item) => ({ ...item, source: "builtin" })),
+    ];
     const seen = new Set();
-    const items = [];
-    [...sharedItems, ...localItems, ...builtinItems].forEach((item) => {
+    return items.filter((item) => {
       const key = item.id || `${item.source}-${item.title}-${item.file || item.filename}`;
-      if (seen.has(key)) return;
+      if (seen.has(key)) return false;
       seen.add(key);
-      items.push(item);
+      return matchesQuery(item);
     });
-    return items.filter(matchesQuery);
   };
 
   const downloadBlob = (blob, filename) => {
@@ -671,11 +666,7 @@
       const badge = document.createElement("span");
       badge.className = "exchange-badge";
       badge.textContent =
-        item.source === "local"
-          ? "On this device"
-          : item.source === "shared"
-            ? "Shared"
-            : "Built-in";
+        item.source === "shared" ? "Shared" : "Built-in";
 
       const title = document.createElement("h3");
       title.textContent = item.title;
@@ -711,6 +702,11 @@
             return;
           }
           if (item.source === "shared") {
+            const cached = localScores.find((row) => row.id === item.id && row.blob);
+            if (cached?.blob) {
+              downloadBlob(cached.blob, item.filename || `${item.id}.mxl`);
+              return;
+            }
             downloadBlob(
               await fetchSharedBlob(item),
               item.filename || `${item.id}.mxl`
@@ -728,7 +724,7 @@
       });
       actions.append(downloadBtn);
 
-      if (canShowRemove() && (item.source === "local" || item.source === "shared")) {
+      if (canShowRemove() && item.source === "shared") {
         const removeBtn = document.createElement("button");
         removeBtn.type = "button";
         removeBtn.className = "btn btn-ghost";
@@ -842,12 +838,17 @@
       };
 
       setStatus("Publishing for everyone…");
-      let publishedShared = false;
-      if (getPublishToken()) {
-        publishedShared = await publishSharedScore(record, prepared.blob);
+      if (!getPublishToken()) {
+        throw new Error(
+          "Publish credentials are missing. Update the exchange publish token and try again."
+        );
+      }
+      const publishedShared = await publishSharedScore(record, prepared.blob);
+      if (!publishedShared) {
+        throw new Error("Could not publish this score for everyone. Try again.");
       }
 
-      // Keep a local cache for faster re-download on this device.
+      // Local cache only — the visible library is always the shared catalog.
       localScores = await loadLocal();
       if (localScores.length >= MAX_FILES) {
         const oldest = [...localScores].sort((a, b) =>
@@ -857,15 +858,14 @@
       }
       await saveLocal(record);
       localScores = await loadLocal();
+      await loadShared().catch(() => {});
 
       render();
       form.reset();
       fileNameEl.textContent = "No file chosen";
       const convertedNote = prepared.converted ? " Converted to MXL." : "";
       setStatus(
-        publishedShared
-          ? `Published for everyone. Anyone can download it below.${convertedNote}`
-          : `Saved on this device. You can download it below.${convertedNote}`
+        `Published for everyone. Anyone can download it below.${convertedNote}`
       );
     } catch (err) {
       setStatus(err.message || "Upload failed.", "error");
