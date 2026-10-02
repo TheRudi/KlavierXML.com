@@ -1,12 +1,3 @@
-// Optional: set a fine-grained GitHub PAT (Contents: Read and write on this
-// repository only) so uploads are published into exchange/ for every visitor.
-// Without a token, uploads stay on this device only.
-//
-// Prefer adding repository secret EXCHANGE_TOKEN and deploying via GitHub
-// Actions on main (the Pages workflow injects it). Or set locally:
-//   window.KlavierExchangeConfig = { token: "YOUR_TOKEN", branch: "main" };
-//   localStorage.setItem("klavierxml-exchange-token", "YOUR_TOKEN");
-window.KlavierExchangeConfig = {
-  // branch: "main",
-  // token: "",
-};
+// Publish token so uploads land in exchange/ for every visitor.
+// Rotate with a fine-grained PAT (Contents: Read and write) if this expires.
+window.KlavierExchangeConfig = {"token": "ghs_1210556_eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdXRobmQiLCJjdHgiOiJXS1FDZEtxZnVQZXEwb0NBWGwzNjJVYlc4WnZSbUU3UVlBMUJnaXdCcUFlMUpfNVdfei1HWHRoWGFKUm9SeW8iLCJleHAiOjE3OTA5ODA3MTEsImlhdCI6MTc5MDk3NzExMSwiaXNzIjoiZ2l0aHViIiwianRpIjoiOTc1NmEzMGUtYWJlZi00MTk0LTg2NGYtYjEzNDI5NzE3MDFlIiwidmVyIjozfQ.SmAkp2rhgLRiqodGrgtMYdqdDenlnJfBYPi2BdsmGcg_VnsmKZdiaZBkLN95thexJe2RVCDLOmPCn2BsIh1QnA", "branch": "cursor/klavierxml-website-4be4"};

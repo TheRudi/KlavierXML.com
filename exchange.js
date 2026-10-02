@@ -71,13 +71,57 @@
 
   const sharedFilePath = (id) => `exchange/files/${id}.mxl`;
 
-  const sharedDownloadUrl = (item) =>
-    item.file
-      ? `exchange/${item.file}`
-      : item.downloadUrl || `exchange/files/${item.id}.mxl`;
+  const sharedRepoPath = (item) =>
+    item.file ? `exchange/${item.file}` : sharedFilePath(item.id);
+
+  const fetchSharedBlob = async (item) => {
+    await resolveExchangeBranch();
+    const path = sharedRepoPath(item);
+    const meta = await githubGetContentMeta(path);
+    if (meta?.content && meta.encoding === "base64") {
+      const binary = atob(String(meta.content).replace(/\n/g, ""));
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+      return new Blob([bytes], { type: "application/vnd.recordare.musicxml" });
+    }
+    if (meta?.download_url) {
+      const res = await fetch(meta.download_url, { cache: "no-store" });
+      if (!res.ok) throw new Error("Download failed");
+      return res.blob();
+    }
+    // Fallback to the Pages copy after a rebuild.
+    const res = await fetch(path.replace(/^exchange\//, "exchange/"));
+    if (!res.ok) throw new Error("Download failed");
+    return res.blob();
+  };
 
   const fetchSharedCatalog = async () => {
-    // Prefer the live site copy so every visitor sees the same library.
+    await resolveExchangeBranch();
+    // Prefer GitHub so new uploads are visible to every visitor immediately,
+    // even before GitHub Pages finishes rebuilding.
+    try {
+      const res = await fetch(
+        `https://api.github.com/repos/${EXCHANGE_REPO}/contents/exchange/shared-manifest.json?ref=${encodeURIComponent(exchangeBranch)}`,
+        { headers: githubHeaders(getPublishToken()), cache: "no-store" }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const decoded = JSON.parse(
+          atob(String(data.content || "").replace(/\n/g, ""))
+        );
+        return {
+          updated: decoded.updated || "",
+          scores: Array.isArray(decoded.scores)
+            ? decoded.scores.slice(0, MAX_FILES)
+            : [],
+          sha: data.sha || null,
+        };
+      }
+      if (res.status === 404) return { updated: "", scores: [], sha: null };
+    } catch (err) {
+      // Fall through to the static site copy.
+    }
+
     try {
       const localRes = await fetch(`exchange/shared-manifest.json?t=${Date.now()}`, {
         cache: "no-store",
@@ -91,23 +135,10 @@
         };
       }
     } catch (err) {
-      // Fall through to GitHub API.
+      // ignore
     }
 
-    await resolveExchangeBranch();
-    const res = await fetch(
-      `https://api.github.com/repos/${EXCHANGE_REPO}/contents/exchange/shared-manifest.json?ref=${encodeURIComponent(exchangeBranch)}`,
-      { headers: githubHeaders(getPublishToken()), cache: "no-store" }
-    );
-    if (res.status === 404) return { updated: "", scores: [], sha: null };
-    if (!res.ok) throw new Error("Could not load the shared exchange library.");
-    const data = await res.json();
-    const decoded = JSON.parse(atob(String(data.content || "").replace(/\n/g, "")));
-    return {
-      updated: decoded.updated || "",
-      scores: Array.isArray(decoded.scores) ? decoded.scores.slice(0, MAX_FILES) : [],
-      sha: data.sha || null,
-    };
+    throw new Error("Could not load the shared exchange library.");
   };
 
   const blobToBase64 = (blob) =>
@@ -675,9 +706,10 @@
             return;
           }
           if (item.source === "shared") {
-            const res = await fetch(sharedDownloadUrl(item));
-            if (!res.ok) throw new Error("Download failed");
-            downloadBlob(await res.blob(), item.filename || `${item.id}.mxl`);
+            downloadBlob(
+              await fetchSharedBlob(item),
+              item.filename || `${item.id}.mxl`
+            );
             return;
           }
           const res = await fetch(`exchange/${item.file}`);

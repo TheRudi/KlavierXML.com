@@ -2,7 +2,7 @@ name: Deploy GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, cursor/klavierxml-website-4be4]
   workflow_dispatch:
 
 permissions:
@@ -34,9 +34,10 @@ jobs:
             python3 - <<'PY'
           import json, os
           token = os.environ["EXCHANGE_TOKEN"]
+          branch = os.environ.get("EXCHANGE_BRANCH", "cursor/klavierxml-website-4be4")
           config = {
-            "token": token,
-            "branch": "main",
+              "token": token,
+              "branch": branch,
           }
           # Keep this as assignable JS config for the exchange publisher.
           open("_site/exchange-config.js", "w").write(
@@ -47,6 +48,7 @@ jobs:
           fi
         env:
           EXCHANGE_TOKEN: ${{ secrets.EXCHANGE_TOKEN }}
+          EXCHANGE_BRANCH: cursor/klavierxml-website-4be4
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
