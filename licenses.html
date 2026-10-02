@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Licenses &amp; Acknowledgements — KlavierXML</title>
+    <meta
+      name="description"
+      content="Copyrights, licenses, and acknowledgements for the open-source components, sounds, and scores used by Klavier."
+    />
+    <link rel="canonical" href="https://klavierxml.com/licenses.html" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Outfit:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="page-licenses">
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header site-header-solid">
+      <a class="wordmark" href="index.html">Klavier<span>XML</span></a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="index.html#why">Why</a>
+        <a href="index.html#how">How it works</a>
+        <a href="index.html#scores">Scores</a>
+        <a class="nav-cta" href="index.html#privacy">Privacy</a>
+      </nav>
+    </header>
+
+    <main id="main" class="legal-main">
+      <header class="legal-hero">
+        <p class="section-kicker">Credits</p>
+        <h1 class="legal-title">Licenses &amp; acknowledgements</h1>
+        <p class="legal-lede">
+          Klavier includes third-party components, sounds, and scores. Each is
+          used under the license shown below, with notices reproduced where
+          required.
+        </p>
+      </header>
+
+      <aside class="thanks-panel" aria-label="Thank you">
+        <p class="thanks-label">Thank you</p>
+        <p class="thanks-quote">
+          This app would not be possible without the help from those
+          organizations and the people who make it work.
+        </p>
+        <p class="thanks-copy">
+          We are grateful to the maintainers, contributors, performers, and
+          communities behind the libraries, SoundFonts, and scores listed on
+          this page.
+        </p>
+      </aside>
+
+      <section class="legal-block" aria-labelledby="copyright-heading">
+        <h2 id="copyright-heading">Klavier</h2>
+        <p>
+          Copyright © 2026 Rüdiger Lueg. All rights reserved.
+        </p>
+        <p class="legal-muted">
+          Plain-text source:
+          <a href="KlavierLicense.txt">KlavierLicense.txt</a>
+        </p>
+      </section>
+
+      <section class="legal-block" aria-labelledby="summary-heading">
+        <h2 id="summary-heading">Summary</h2>
+        <div class="license-table-wrap">
+          <table class="license-table">
+            <thead>
+              <tr>
+                <th scope="col">Component</th>
+                <th scope="col">Used for</th>
+                <th scope="col">License</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <a href="#opensheetmusicdisplay">OpenSheetMusicDisplay</a>
+                </td>
+                <td>Sheet music engraving</td>
+                <td>
+                  <a
+                    href="https://opensource.org/licenses/BSD-3-Clause"
+                    rel="noopener noreferrer"
+                    >BSD 3-Clause</a
+                  >
+                </td>
+              </tr>
+              <tr>
+                <td><a href="#vexflow">VexFlow</a></td>
+                <td>Music notation rendering (in OSMD)</td>
+                <td>
+                  <a
+                    href="https://opensource.org/licenses/MIT"
+                    rel="noopener noreferrer"
+                    >MIT</a
+                  >
+                </td>
+              </tr>
+              <tr>
+                <td><a href="#jszip">JSZip</a></td>
+                <td>Reading compressed MusicXML (in OSMD)</td>
+                <td>
+                  <a
+                    href="https://opensource.org/licenses/MIT"
+                    rel="noopener noreferrer"
+                    >MIT</a
+                  >
+                </td>
+              </tr>
+              <tr>
+                <td><a href="#loglevel">loglevel</a></td>
+                <td>Logging (in OSMD)</td>
+                <td>
+                  <a
+                    href="https://opensource.org/licenses/MIT"
+                    rel="noopener noreferrer"
+                    >MIT</a
+                  >
+                </td>
+              </tr>
+              <tr>
+                <td><a href="#fluidr3">FluidR3 GM SoundFont</a></td>
+                <td>“Classic Grand” piano sound (<code>Piano.sf2</code>)</td>
+                <td>
+                  <a
+                    href="https://opensource.org/licenses/MIT"
+                    rel="noopener noreferrer"
+                    >MIT</a
+                  >
+                </td>
+              </tr>
+              <tr>
+                <td><a href="#ydp-grand">YDP Grand Piano (FreePats)</a></td>
+                <td>
+                  “Concert Grand” piano sound
+                  (<code>Piano-ConcertGrand.sf2</code>)
+                </td>
+                <td>
+                  <a
+                    href="https://creativecommons.org/licenses/by/3.0/"
+                    rel="noopener noreferrer"
+                    >CC BY 3.0</a
+                  >
+                </td>
+              </tr>
+              <tr>
+                <td><a href="#upright-kw">Upright Piano KW (FreePats)</a></td>
+                <td>
+                  “Compact” and “Studio Upright” sounds
+                  (<code>Piano-Compact.sf2</code>,
+                  <code>Piano-Studio.sf2</code>)
+                </td>
+                <td>
+                  <a
+                    href="https://creativecommons.org/publicdomain/zero/1.0/"
+                    rel="noopener noreferrer"
+                    >CC0 1.0</a
+                  >
+                </td>
+              </tr>
+              <tr>
+                <td><a href="#bundled-scores">Ode to Joy (Easy variation)</a></td>
+                <td>Bundled score</td>
+                <td><a href="#bundled-scores">See bundled scores</a></td>
+              </tr>
+              <tr>
+                <td>
+                  <a href="#bundled-scores">Happy Birthday (Easy to play)</a>
+                </td>
+                <td>Bundled score</td>
+                <td><a href="#bundled-scores">See bundled scores</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="legal-block" id="opensheetmusicdisplay">
+        <h2>1. OpenSheetMusicDisplay</h2>
+        <dl class="meta-list">
+          <div>
+            <dt>Used for</dt>
+            <dd>Sheet music engraving</dd>
+          </div>
+          <div>
+            <dt>File</dt>
+            <dd><code>Web/opensheetmusicdisplay.min.js</code></dd>
+          </div>
+          <div>
+            <dt>License</dt>
+            <dd>
+              <a
+                href="https://opensource.org/licenses/BSD-3-Clause"
+                rel="noopener noreferrer"
+                >BSD 3-Clause License</a
+              >
+            </dd>
+          </div>
+          <div>
+            <dt>Source</dt>
+            <dd>
+              <a
+                href="https://github.com/opensheetmusicdisplay/opensheetmusicdisplay"
+                rel="noopener noreferrer"
+                >github.com/opensheetmusicdisplay/opensheetmusicdisplay</a
+              >
+            </dd>
+          </div>
+        </dl>
+        <p>Copyright © 2019 PhonicScore</p>
+        <details class="license-details">
+          <summary>Full license text</summary>
+          <pre class="license-text">Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its contributors
+   may be used to endorse or promote products derived from this software
+   without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</pre>
+        </details>
+      </section>
+
+      <section class="legal-block" id="vexflow">
+        <h2>2. VexFlow</h2>
+        <dl class="meta-list">
+          <div>
+            <dt>Used for</dt>
+            <dd>Music notation rendering (bundled inside OpenSheetMusicDisplay)</dd>
+          </div>
+          <div>
+            <dt>License</dt>
+            <dd>
+              <a
+                href="https://opensource.org/licenses/MIT"
+                rel="noopener noreferrer"
+                >MIT License</a
+              >
+            </dd>
+          </div>
+          <div>
+            <dt>Source</dt>
+            <dd>
+              <a
+                href="https://github.com/0xfe/vexflow"
+                rel="noopener noreferrer"
+                >github.com/0xfe/vexflow</a
+              >
+            </dd>
+          </div>
+        </dl>
+        <p>Copyright © 2010 Mohit Muthanna Cheppudira</p>
+        <details class="license-details">
+          <summary>Full license text</summary>
+          <pre class="license-text">Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.</pre>
+        </details>
+      </section>
+
+      <section class="legal-block" id="jszip">
+        <h2>3. JSZip</h2>
+        <dl class="meta-list">
+          <div>
+            <dt>Used for</dt>
+            <dd>Reading compressed MusicXML (bundled inside OpenSheetMusicDisplay)</dd>
+          </div>
+          <div>
+            <dt>License</dt>
+            <dd>
+              <a
+                href="https://opensource.org/licenses/MIT"
+                rel="noopener noreferrer"
+                >MIT License</a
+              >
+              (JSZip is dual-licensed MIT or GPLv3; used under MIT)
+            </dd>
+          </div>
+          <div>
+            <dt>Source</dt>
+            <dd>
+              <a href="https://github.com/Stuk/jszip" rel="noopener noreferrer"
+                >github.com/Stuk/jszip</a
+              >
+            </dd>
+          </div>
+        </dl>
+        <p>
+          Copyright © 2009–2016 Stuart Knightley, David Duponchel, Franz
+          Buchinger, António Afonso
+        </p>
+        <details class="license-details">
+          <summary>Full license text</summary>
+          <pre class="license-text">Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.</pre>
+        </details>
+      </section>
+
+      <section class="legal-block" id="loglevel">
+        <h2>4. loglevel</h2>
+        <dl class="meta-list">
+          <div>
+            <dt>Used for</dt>
+            <dd>Logging (bundled inside OpenSheetMusicDisplay)</dd>
+          </div>
+          <div>
+            <dt>License</dt>
+            <dd>
+              <a
+                href="https://opensource.org/licenses/MIT"
+                rel="noopener noreferrer"
+                >MIT License</a
+              >
+            </dd>
+          </div>
+          <div>
+            <dt>Source</dt>
+            <dd>
+              <a
+                href="https://github.com/pimterry/loglevel"
+                rel="noopener noreferrer"
+                >github.com/pimterry/loglevel</a
+              >
+            </dd>
+          </div>
+        </dl>
+        <p>Copyright © 2013 Tim Perry</p>
+        <details class="license-details">
+          <summary>Full license text</summary>
+          <pre class="license-text">Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.</pre>
+        </details>
+      </section>
+
+      <section class="legal-block" id="fluidr3">
+        <h2>5. FluidR3 GM SoundFont — “Classic Grand”</h2>
+        <dl class="meta-list">
+          <div>
+            <dt>Used for</dt>
+            <dd>“Classic Grand” piano sound</dd>
+          </div>
+          <div>
+            <dt>File</dt>
+            <dd>
+              <code>Piano.sf2</code> (the “Yamaha Grand Piano” preset extracted
+              from <code>FluidR3_GM.sf2</code>)
+            </dd>
+          </div>
+          <div>
+            <dt>License</dt>
+            <dd>
+              <a
+                href="https://opensource.org/licenses/MIT"
+                rel="noopener noreferrer"
+                >MIT License</a
+              >
+            </dd>
+          </div>
+        </dl>
+        <p>Copyright © 2000–2002, 2008, 2012 Frank Wen</p>
+        <details class="license-details">
+          <summary>Full license text</summary>
+          <pre class="license-text">Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.</pre>
+        </details>
+      </section>
+
+      <section class="legal-block" id="ydp-grand">
+        <h2>6. YDP Grand Piano (FreePats) — “Concert Grand”</h2>
+        <dl class="meta-list">
+          <div>
+            <dt>Used for</dt>
+            <dd>“Concert Grand” piano sound</dd>
+          </div>
+          <div>
+            <dt>File</dt>
+            <dd><code>Piano-ConcertGrand.sf2</code> (release 2016-08-04)</dd>
+          </div>
+          <div>
+            <dt>License</dt>
+            <dd>
+              <a
+                href="https://creativecommons.org/licenses/by/3.0/"
+                rel="noopener noreferrer"
+                >Creative Commons Attribution 3.0 Unported (CC BY 3.0)</a
+              >
+            </dd>
+          </div>
+          <div>
+            <dt>Source</dt>
+            <dd>
+              <a
+                href="https://freepats.zenvoid.org/Piano/acoustic-grand-piano.html"
+                rel="noopener noreferrer"
+                >freepats.zenvoid.org — Acoustic Grand Piano</a
+              >
+            </dd>
+          </div>
+        </dl>
+        <h3>Attribution</h3>
+        <p>
+          Built from the Zenph Studios Yamaha Disklavier Pro Piano Multisamples
+          for OLPC, performed by computer and recorded for OLPC by Dr. Mikhail
+          Krishtal and his team at Zenph Studios. The samples are part of the
+          OLPC sound sample library, donated to Dr. Richard Boulanger
+          (cSounds.com) and offered under CC BY. The SoundFont and modifications
+          to the original samples were produced by Roberto
+          (<a href="mailto:roberto@zenvoid.org">roberto@zenvoid.org</a>) for the
+          <a href="https://freepats.zenvoid.org/" rel="noopener noreferrer"
+            >FreePats</a
+          >
+          project.
+        </p>
+        <p>
+          OLPC sound samples:
+          <a
+            href="http://wiki.laptop.org/go/Sound_samples"
+            rel="noopener noreferrer"
+            >wiki.laptop.org/go/Sound_samples</a
+          >
+        </p>
+      </section>
+
+      <section class="legal-block" id="upright-kw">
+        <h2>7. Upright Piano KW (FreePats) — “Compact” &amp; “Studio Upright”</h2>
+        <dl class="meta-list">
+          <div>
+            <dt>Used for</dt>
+            <dd>“Compact” and “Studio Upright” piano sounds</dd>
+          </div>
+          <div>
+            <dt>Files</dt>
+            <dd>
+              <code>Piano-Compact.sf2</code>, <code>Piano-Studio.sf2</code>
+              (version 2022-02-21)
+            </dd>
+          </div>
+          <div>
+            <dt>License</dt>
+            <dd>
+              <a
+                href="https://creativecommons.org/publicdomain/zero/1.0/"
+                rel="noopener noreferrer"
+                >Creative Commons CC0 1.0 Universal Public Domain Dedication</a
+              >
+            </dd>
+          </div>
+          <div>
+            <dt>Source</dt>
+            <dd>
+              <a
+                href="http://freepats.zenvoid.org/Piano/acoustic-grand-piano.html#UprightKW"
+                rel="noopener noreferrer"
+                >freepats.zenvoid.org — Upright Piano KW</a
+              >
+            </dd>
+          </div>
+        </dl>
+        <h3>Credits</h3>
+        <p>
+          Not required under CC0 — given with thanks. Recorded from a Kawai
+          upright piano in the home of Inma Martínez de Miguel by Gonzalo
+          (<a href="mailto:humanogonzalo@gmail.com">humanogonzalo@gmail.com</a>)
+          and Roberto
+          (<a href="mailto:roberto@zenvoid.org">roberto@zenvoid.org</a>) in
+          January 2017. Edited and processed by Roberto for the
+          <a href="https://freepats.zenvoid.org/" rel="noopener noreferrer"
+            >FreePats</a
+          >
+          project.
+        </p>
+      </section>
+
+      <section class="legal-block" id="bundled-scores">
+        <h2>8. Bundled scores</h2>
+        <p>
+          Bundled score files are named “Composer-Title-Mark”. A “©” mark means
+          the piece is under copyright; “⎕” marks a piece treated as free to
+          use.
+        </p>
+
+        <article class="score-credit">
+          <h3>Ode to Joy (Easy variation)</h3>
+          <dl class="meta-list">
+            <div>
+              <dt>File</dt>
+              <dd><code>Beethoven-Ode_to_Joy-⎕.mxl</code></dd>
+            </div>
+            <div>
+              <dt>Music</dt>
+              <dd>
+                Ludwig van Beethoven (1770–1827), Symphony No. 9 — public domain
+              </dd>
+            </div>
+            <div>
+              <dt>Arrangement</dt>
+              <dd>
+                “Arranged for piano”, arr. Torby Brand (engraved with
+                <a href="https://musescore.org/" rel="noopener noreferrer"
+                  >MuseScore</a
+                >
+                2.3.2, 2020-12-22)
+              </dd>
+            </div>
+            <div>
+              <dt>License</dt>
+              <dd>
+                The melody is public domain. The file does not state a license
+                for the arrangement; confirm the arranger’s terms before
+                publishing.
+              </dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="score-credit">
+          <h3>Happy Birthday (Easy to play)</h3>
+          <dl class="meta-list">
+            <div>
+              <dt>File</dt>
+              <dd><code>Hill-Happy_Birthday-⎕.mxl</code></dd>
+            </div>
+            <div>
+              <dt>Music</dt>
+              <dd>
+                Mildred J. Hill and Patty Smith Hill — public domain in the
+                United States
+                (<em>Rupa Marya v. Warner/Chappell Music</em>, 2016) and in the
+                European Union since 2017
+              </dd>
+            </div>
+            <div>
+              <dt>Arrangement</dt>
+              <dd>
+                Arranger not named (engraved with
+                <a href="https://musescore.org/" rel="noopener noreferrer"
+                  >MuseScore</a
+                >
+                2.3.2, 2018-12-03)
+              </dd>
+            </div>
+            <div>
+              <dt>License</dt>
+              <dd>
+                The melody is public domain. The file does not state a license
+                for the arrangement; confirm the arranger’s terms before
+                publishing.
+              </dd>
+            </div>
+          </dl>
+        </article>
+
+        <p class="legal-muted">
+          Scores the user opens from Files or other apps are the user’s own and
+          are not distributed with Klavier.
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <p class="footer-brand">KlavierXML</p>
+        <p>
+          <a href="index.html">Home</a>
+          ·
+          <a href="licenses.html">Licenses</a>
+          · © <span id="year"></span> Rüdiger Lueg
+        </p>
+      </div>
+    </footer>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>
