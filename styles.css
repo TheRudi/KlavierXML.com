@@ -1308,6 +1308,102 @@ button {
   border-color: rgba(224, 176, 122, 0.55);
 }
 
+.upload-fields input[type="email"] {
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--ink-line);
+  border-radius: 0.65rem;
+  background: rgba(12, 15, 20, 0.65);
+  color: var(--ivory);
+  font: inherit;
+}
+
+.upload-fields input[type="email"]:focus {
+  outline: 1px solid rgba(224, 176, 122, 0.55);
+  border-color: rgba(224, 176, 122, 0.55);
+}
+
+.field-hint {
+  color: var(--ivory-mute);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.auth-modal[hidden] {
+  display: none !important;
+}
+
+.auth-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+}
+
+.auth-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 8, 12, 0.72);
+}
+
+.auth-modal-panel {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 28rem);
+  display: grid;
+  gap: 0.85rem;
+  padding: 1.4rem 1.35rem 1.5rem;
+  border: 1px solid rgba(224, 176, 122, 0.28);
+  border-radius: 1rem;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(224, 176, 122, 0.12), transparent 55%),
+    #141922;
+}
+
+.auth-modal-panel h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.auth-modal-copy {
+  margin: 0;
+  color: var(--ivory-soft);
+  font-size: 0.98rem;
+}
+
+.auth-modal-panel label {
+  display: grid;
+  gap: 0.4rem;
+  color: var(--ivory-soft);
+  font-size: 0.92rem;
+}
+
+.auth-modal-panel input {
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--ink-line);
+  border-radius: 0.65rem;
+  background: rgba(12, 15, 20, 0.65);
+  color: var(--ivory);
+  font: inherit;
+}
+
+.auth-modal-panel input:focus {
+  outline: 1px solid rgba(224, 176, 122, 0.55);
+  border-color: rgba(224, 176, 122, 0.55);
+}
+
+.auth-modal-error {
+  margin: 0;
+  color: #e7a3a3;
+  font-size: 0.9rem;
+}
+
 .upload-check {
   display: grid !important;
   grid-template-columns: auto 1fr;

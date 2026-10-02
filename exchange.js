@@ -663,6 +663,46 @@
     render();
   });
 
+  removeModal?.querySelectorAll("[data-close-modal]").forEach((el) => {
+    el.addEventListener("click", () => {
+      closeRemoveModal();
+    });
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && removeModal && !removeModal.hidden) {
+      closeRemoveModal();
+    }
+  });
+
+  removeForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const item = localScores.find((score) => score.id === pendingRemoveId);
+    if (!item) {
+      closeRemoveModal();
+      setStatus("That score is no longer available.", "error");
+      return;
+    }
+
+    const secret = removeSecretInput?.value || "";
+    const allowed = await canRemoveScore(item, secret);
+    if (!allowed) {
+      if (removeError) {
+        removeError.hidden = false;
+        removeError.textContent =
+          "Email or password did not match. Try again.";
+      }
+      removeSecretInput?.focus();
+      return;
+    }
+
+    await deleteLocal(item.id);
+    localScores = await loadLocal();
+    closeRemoveModal();
+    render();
+    setStatus("Removed from this device.");
+  });
+
   (async () => {
     try {
       await Promise.all([
