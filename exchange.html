@@ -42,8 +42,9 @@
           <p class="section-kicker">Upload</p>
           <h2 id="upload-heading">Add a score</h2>
           <p>
-            Choose a MusicXML or MXL file. It is saved in this browser so you can
-            download it again anytime on this device. You can also send it for
+            Choose a MusicXML or MXL file. XML uploads are converted to
+            compressed <code>.mxl</code> automatically. Files are saved in this
+            browser (up to 100 on this device). You can also send a score for
             community review.
           </p>
         </div>
@@ -59,7 +60,8 @@
             />
             <span class="file-drop-title">Drop a score here, or browse</span>
             <span class="file-drop-hint"
-              >Accepted: .xml, .musicxml, .mxl · max 8&nbsp;MB</span
+              >Accepted: .xml, .musicxml, .mxl · XML → MXL · max 8&nbsp;MB · max
+              100 files</span
             >
             <span class="file-drop-name" id="file-name">No file chosen</span>
           </label>
@@ -110,6 +112,7 @@
           <div>
             <p class="section-kicker">Library</p>
             <h2 id="library-heading">Browse scores</h2>
+            <p class="library-count" id="library-count"></p>
           </div>
           <label class="library-filter">
             <span class="visually-hidden">Filter scores</span>
@@ -191,6 +194,7 @@
       </div>
     </footer>
 
+    <script src="jszip.min.js" defer></script>
     <script src="app.js" defer></script>
     <script src="exchange.js" defer></script>
   </body>

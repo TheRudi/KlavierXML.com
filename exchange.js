@@ -2,6 +2,7 @@
   const DB_NAME = "klavierxml-exchange";
   const STORE = "scores";
   const MAX_BYTES = 8 * 1024 * 1024;
+  const MAX_FILES = 100;
   const ALLOWED = new Set(["xml", "musicxml", "mxl"]);
 
   const listEl = document.getElementById("exchange-list");
@@ -14,6 +15,7 @@
   const composerInput = document.getElementById("score-composer");
   const shareInput = document.getElementById("score-share");
   const searchInput = document.getElementById("library-search");
+  const countEl = document.getElementById("library-count");
   const tabs = document.querySelectorAll(".library-tab");
 
   if (!listEl || !form) return;
@@ -40,6 +42,11 @@
       .replace(/\.(xml|musicxml|mxl)$/i, "")
       .replace(/[_-]+/g, " ")
       .trim() || "Untitled score";
+
+  const stemFromFile = (name) =>
+    String(name || "")
+      .replace(/\.(xml|musicxml|mxl)$/i, "")
+      .trim() || "score";
 
   const openDb = () =>
     new Promise((resolve, reject) => {
@@ -91,6 +98,13 @@
     statusEl.dataset.kind = kind;
   };
 
+  const updateCount = () => {
+    if (!countEl) return;
+    const total = Math.min(MAX_FILES, localScores.length + community.length);
+    const local = localScores.length;
+    countEl.textContent = `${local} on this device · ${community.length} community · max ${MAX_FILES} saved here`;
+  };
+
   const matchesQuery = (item) => {
     if (!query) return true;
     const hay = `${item.title} ${item.composer} ${item.credit || ""}`.toLowerCase();
@@ -126,10 +140,69 @@
     URL.revokeObjectURL(url);
   };
 
+  const containerXml = (scorePath) => `<?xml version="1.0" encoding="UTF-8"?>
+<container>
+  <rootfiles>
+    <rootfile full-path="${scorePath}" media-type="application/vnd.recordare.musicxml+xml"/>
+  </rootfiles>
+</container>
+`;
+
+  const looksLikeMusicXml = (text) =>
+    /<score-partwise[\s>]/i.test(text) ||
+    /<score-timewise[\s>]/i.test(text) ||
+    /<!DOCTYPE\s+score-partwise/i.test(text) ||
+    /<!DOCTYPE\s+score-timewise/i.test(text);
+
+  const xmlToMxl = async (xmlBuffer, originalName) => {
+    if (typeof JSZip === "undefined") {
+      throw new Error("MXL conversion is unavailable right now. Try again in a moment.");
+    }
+    const text = new TextDecoder().decode(xmlBuffer);
+    if (!looksLikeMusicXml(text)) {
+      throw new Error("That XML file does not look like MusicXML.");
+    }
+
+    const scorePath = `${stemFromFile(originalName) || "score"}.xml`;
+    const zip = new JSZip();
+    zip.file("mimetype", "application/vnd.recordare.musicxml", {
+      compression: "STORE",
+    });
+    zip.folder("META-INF").file("container.xml", containerXml(scorePath));
+    zip.file(scorePath, text);
+
+    const mxlBlob = await zip.generateAsync({
+      type: "blob",
+      mimeType: "application/vnd.recordare.musicxml",
+      compression: "DEFLATE",
+      compressionOptions: { level: 6 },
+    });
+    const filename = `${stemFromFile(originalName)}.mxl`;
+    return { blob: mxlBlob, filename, bytes: mxlBlob.size };
+  };
+
+  const prepareScoreFile = async (file, ext, buffer) => {
+    if (ext === "mxl") {
+      return {
+        blob: new Blob([buffer], {
+          type: file.type || "application/vnd.recordare.musicxml",
+        }),
+        filename: file.name.replace(/\.(xml|musicxml)$/i, "") || file.name,
+        bytes: file.size,
+        converted: false,
+      };
+    }
+
+    setStatus("Converting XML to MXL…");
+    const converted = await xmlToMxl(buffer, file.name);
+    return { ...converted, converted: true };
+  };
+
   const render = () => {
     const items = visibleItems();
     listEl.innerHTML = "";
     emptyEl.hidden = items.length > 0;
+    updateCount();
 
     items.forEach((item) => {
       const li = document.createElement("li");
@@ -210,7 +283,7 @@
     const res = await fetch("exchange/manifest.json", { cache: "no-store" });
     if (!res.ok) throw new Error("Could not load the community library.");
     const data = await res.json();
-    community = Array.isArray(data.scores) ? data.scores : [];
+    community = (Array.isArray(data.scores) ? data.scores : []).slice(0, MAX_FILES);
   };
 
   const readFile = (file) =>
@@ -221,15 +294,15 @@
       reader.readAsArrayBuffer(file);
     });
 
-  const maybeEmailShare = async (file, title, composer) => {
+  const maybeEmailShare = async (fileOrBlob, filename, title, composer) => {
     if (!shareInput?.checked) return false;
     const body = new FormData();
     body.append("_subject", `KlavierXML exchange upload: ${title}`);
     body.append(
       "message",
-      `A MusicXML/MXL score was offered to the community library.\n\nTitle: ${title}\nComposer/credit: ${composer || "(none)"}\nFilename: ${file.name}\nSize: ${file.size} bytes\n`
+      `A MusicXML/MXL score was offered to the community library.\n\nTitle: ${title}\nComposer/credit: ${composer || "(none)"}\nFilename: ${filename}\nSize: ${fileOrBlob.size} bytes\n`
     );
-    body.append("score", file, file.name);
+    body.append("score", fileOrBlob, filename);
     body.append("_template", "table");
     body.append("_captcha", "false");
 
@@ -275,28 +348,65 @@
       setStatus("That file is larger than 8 MB.", "error");
       return;
     }
+    if (localScores.length >= MAX_FILES) {
+      setStatus(
+        `This device already has ${MAX_FILES} scores. Remove one before uploading another.`,
+        "error"
+      );
+      return;
+    }
 
     const title = (titleInput.value || titleFromFile(file.name)).trim();
     const composer = (composerInput.value || "").trim();
 
     try {
-      setStatus("Uploading…");
+      setStatus(ext === "mxl" ? "Uploading…" : "Converting XML to MXL…");
       const buffer = await readFile(file);
-      const blob = new Blob([buffer], { type: file.type || "application/octet-stream" });
+      const prepared = await prepareScoreFile(file, ext, buffer);
       const record = {
         id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         title,
         composer: composer || "Uploaded score",
-        credit: "Saved on this device",
-        filename: file.name,
-        format: ext,
-        bytes: file.size,
-        blob,
+        credit: prepared.converted
+          ? "Converted to MXL · saved on this device"
+          : "Saved on this device",
+        filename: prepared.filename.endsWith(".mxl")
+          ? prepared.filename
+          : `${stemFromFile(prepared.filename)}.mxl`,
+        format: "mxl",
+        bytes: prepared.bytes,
+        blob: prepared.blob,
         added: new Date().toISOString().slice(0, 10),
-        license: "Uploaded by you. Only share files you have rights to distribute.",
+        license:
+          "Uploaded by you. Only share files you have rights to distribute.",
       };
+
+      // Enforce the limit again in case of overlapping uploads.
+      localScores = await loadLocal();
+      if (localScores.length >= MAX_FILES) {
+        setStatus(
+          `This device already has ${MAX_FILES} scores. Remove one before uploading another.`,
+          "error"
+        );
+        return;
+      }
+
       await saveLocal(record);
       localScores = await loadLocal();
+      if (localScores.length > MAX_FILES) {
+        // Keep the newest MAX_FILES entries if somehow over.
+        const sorted = [...localScores].sort((a, b) =>
+          String(b.added).localeCompare(String(a.added))
+        );
+        const keep = new Set(sorted.slice(0, MAX_FILES).map((item) => item.id));
+        await Promise.all(
+          localScores
+            .filter((item) => !keep.has(item.id))
+            .map((item) => deleteLocal(item.id))
+        );
+        localScores = await loadLocal();
+      }
+
       activeTab = "local";
       tabs.forEach((tab) => {
         const on = tab.dataset.tab === "local";
@@ -307,7 +417,12 @@
 
       let shared = false;
       try {
-        shared = await maybeEmailShare(file, title, composer);
+        shared = await maybeEmailShare(
+          prepared.blob,
+          record.filename,
+          title,
+          composer
+        );
       } catch (err) {
         form.reset();
         fileNameEl.textContent = "No file chosen";
@@ -317,10 +432,11 @@
 
       form.reset();
       fileNameEl.textContent = "No file chosen";
+      const convertedNote = prepared.converted ? " Converted to MXL." : "";
       setStatus(
         shared
-          ? "Saved on this device and sent for community review."
-          : "Saved on this device. You can download it below."
+          ? `Saved on this device as MXL and sent for community review.${convertedNote}`
+          : `Saved on this device as MXL. You can download it below.${convertedNote}`
       );
     } catch (err) {
       setStatus(err.message || "Upload failed.", "error");
@@ -352,7 +468,7 @@
         }),
         loadLocal()
           .then((rows) => {
-            localScores = rows;
+            localScores = rows.slice(0, MAX_FILES);
           })
           .catch(() => {
             localScores = [];

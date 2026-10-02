@@ -1224,6 +1224,12 @@ button {
   line-height: 1.1;
 }
 
+.library-count {
+  margin: -0.35rem 0 0;
+  color: var(--ivory-mute);
+  font-size: 0.9rem;
+}
+
 .exchange-panel-copy p {
   margin: 0;
   color: var(--ivory-soft);
