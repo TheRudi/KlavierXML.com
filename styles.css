@@ -469,6 +469,52 @@ button {
   font-size: 0.95rem;
 }
 
+.score-list {
+  list-style: none;
+  margin: 2.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 800px) {
+  .score-list {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+}
+
+.score-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.35rem;
+  min-height: 100%;
+  padding: 1.5rem 1.4rem 1.35rem;
+  border: 1px solid var(--ink-line);
+  border-radius: 1rem;
+  background:
+    radial-gradient(circle at 90% 0%, rgba(224, 176, 122, 0.12), transparent 42%),
+    linear-gradient(160deg, rgba(26, 32, 43, 0.9), rgba(16, 21, 28, 0.9));
+}
+
+.score-card h3 {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.score-card p {
+  margin: 0;
+  color: var(--ivory-soft);
+}
+
+.score-card .btn {
+  align-self: flex-start;
+}
+
 .score-preview {
   position: relative;
   min-height: 16rem;
