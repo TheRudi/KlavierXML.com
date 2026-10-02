@@ -2,18 +2,6 @@
   "updated": "2026-10-02",
   "scores": [
     {
-      "id": "shared-1790977232941-s5cm1d",
-      "title": "Anywhere Shared Song",
-      "composer": "Global Tester",
-      "credit": "Converted to MXL \u00b7 shared exchange",
-      "filename": "global-upload.mxl",
-      "format": "mxl",
-      "bytes": 507,
-      "added": "2026-10-02",
-      "file": "files/shared-1790977232941-s5cm1d.mxl",
-      "license": "Uploaded by a community member. Only share files you have rights to distribute."
-    },
-    {
       "id": "shared-demo-birthday",
       "title": "Happy Birthday",
       "composer": "Patty & Mildred Hill",
