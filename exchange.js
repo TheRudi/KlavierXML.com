@@ -5,6 +5,12 @@
   const MAX_FILES = 100;
   const ALLOWED = new Set(["xml", "musicxml", "mxl"]);
   const REMOVE_MASTER_PASSWORD = "RAL";
+  const EXCHANGE_REPO = "TheRudi/KlavierXML.com";
+  const EXCHANGE_BRANCHES = [
+    window.KlavierExchangeConfig?.branch,
+    "cursor/klavierxml-website-4be4",
+    "main",
+  ].filter(Boolean);
 
   const listEl = document.getElementById("exchange-list");
   const emptyEl = document.getElementById("library-empty");
@@ -27,11 +33,13 @@
 
   if (!listEl || !form) return;
 
-  let community = [];
+  let builtin = [];
+  let sharedScores = [];
   let localScores = [];
   let activeTab = "all";
   let query = "";
-  let pendingRemoveId = null;
+  let pendingRemove = null;
+  let exchangeBranch = EXCHANGE_BRANCHES[0] || "main";
 
   const normalizeEmail = (value) => String(value || "").trim().toLowerCase();
 
@@ -57,7 +65,7 @@
   };
 
   const openRemoveModal = (item) => {
-    pendingRemoveId = item.id;
+    pendingRemove = item;
     if (removeScoreTitle) removeScoreTitle.textContent = item.title || "this score";
     if (removeSecretInput) removeSecretInput.value = "";
     if (removeError) {
@@ -69,12 +77,317 @@
   };
 
   const closeRemoveModal = () => {
-    pendingRemoveId = null;
+    pendingRemove = null;
     if (removeModal) removeModal.hidden = true;
     if (removeSecretInput) removeSecretInput.value = "";
     if (removeError) {
       removeError.hidden = true;
       removeError.textContent = "";
+    }
+  };
+
+  const getPublishToken = () =>
+    String(
+      window.KlavierExchangeConfig?.token ||
+        window.localStorage.getItem("klavierxml-exchange-token") ||
+        ""
+    ).trim();
+
+  const githubHeaders = (token, extra = {}) => ({
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...extra,
+  });
+
+  const resolveExchangeBranch = async () => {
+    for (const branch of EXCHANGE_BRANCHES) {
+      try {
+        const res = await fetch(
+          `https://api.github.com/repos/${EXCHANGE_REPO}/contents/exchange/shared-manifest.json?ref=${encodeURIComponent(branch)}`,
+          { headers: githubHeaders(getPublishToken()) }
+        );
+        if (res.ok) {
+          exchangeBranch = branch;
+          return branch;
+        }
+      } catch (err) {
+        // try next branch
+      }
+    }
+    exchangeBranch = EXCHANGE_BRANCHES[0] || "main";
+    return exchangeBranch;
+  };
+
+  const sharedFilePath = (id) => `exchange/files/${id}.mxl`;
+
+  const sharedDownloadUrl = (item) =>
+    item.file
+      ? `exchange/${item.file}`
+      : item.downloadUrl || `exchange/files/${item.id}.mxl`;
+
+  const fetchSharedCatalog = async () => {
+    // Prefer the live site copy so every visitor sees the same library.
+    try {
+      const localRes = await fetch(`exchange/shared-manifest.json?t=${Date.now()}`, {
+        cache: "no-store",
+      });
+      if (localRes.ok) {
+        const data = await localRes.json();
+        return {
+          updated: data.updated || "",
+          scores: Array.isArray(data.scores) ? data.scores.slice(0, MAX_FILES) : [],
+          sha: null,
+        };
+      }
+    } catch (err) {
+      // Fall through to GitHub API.
+    }
+
+    await resolveExchangeBranch();
+    const res = await fetch(
+      `https://api.github.com/repos/${EXCHANGE_REPO}/contents/exchange/shared-manifest.json?ref=${encodeURIComponent(exchangeBranch)}`,
+      { headers: githubHeaders(getPublishToken()), cache: "no-store" }
+    );
+    if (res.status === 404) return { updated: "", scores: [], sha: null };
+    if (!res.ok) throw new Error("Could not load the shared exchange library.");
+    const data = await res.json();
+    const decoded = JSON.parse(atob(String(data.content || "").replace(/\n/g, "")));
+    return {
+      updated: decoded.updated || "",
+      scores: Array.isArray(decoded.scores) ? decoded.scores.slice(0, MAX_FILES) : [],
+      sha: data.sha || null,
+    };
+  };
+
+  const blobToBase64 = (blob) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = String(reader.result || "");
+        const base64 = result.includes(",") ? result.split(",")[1] : result;
+        resolve(base64);
+      };
+      reader.onerror = () => reject(new Error("Could not read the score file."));
+      reader.readAsDataURL(blob);
+    });
+
+  const githubPutContent = async (path, contentBase64, message, sha) => {
+    const token = getPublishToken();
+    if (!token) throw new Error("NO_TOKEN");
+    await resolveExchangeBranch();
+    const res = await fetch(
+      `https://api.github.com/repos/${EXCHANGE_REPO}/contents/${path}`,
+      {
+        method: "PUT",
+        headers: githubHeaders(token, { "Content-Type": "application/json" }),
+        body: JSON.stringify({
+          message,
+          content: contentBase64,
+          branch: exchangeBranch,
+          ...(sha ? { sha } : {}),
+        }),
+      }
+    );
+    if (!res.ok) {
+      const detail = await res.text();
+      throw new Error(
+        `Could not publish to GitHub (${res.status}). ${detail.slice(0, 180)}`
+      );
+    }
+    return res.json();
+  };
+
+  const githubDeleteContent = async (path, message, sha) => {
+    const token = getPublishToken();
+    if (!token || !sha) return;
+    await resolveExchangeBranch();
+    await fetch(`https://api.github.com/repos/${EXCHANGE_REPO}/contents/${path}`, {
+      method: "DELETE",
+      headers: githubHeaders(token, { "Content-Type": "application/json" }),
+      body: JSON.stringify({ message, sha, branch: exchangeBranch }),
+    });
+  };
+
+  const githubGetContentMeta = async (path) => {
+    await resolveExchangeBranch();
+    const res = await fetch(
+      `https://api.github.com/repos/${EXCHANGE_REPO}/contents/${path}?ref=${encodeURIComponent(exchangeBranch)}`,
+      { headers: githubHeaders(getPublishToken()), cache: "no-store" }
+    );
+    if (res.status === 404) return null;
+    if (!res.ok) return null;
+    return res.json();
+  };
+
+  const uploadPackageToDpaste = async (payload) => {
+    const body = new URLSearchParams({
+      content: JSON.stringify(payload),
+      expiry_days: "365",
+      format: "json",
+    });
+    const res = await fetch("https://dpaste.com/api/v2/", {
+      method: "POST",
+      body,
+    });
+    if (!res.ok) throw new Error("Could not stage the score for publishing.");
+    const url = (await res.text()).trim();
+    return url.endsWith(".txt") ? url : `${url}.txt`;
+  };
+
+  const openPublishIssue = (entry, packageUrl) => {
+    const title = `exchange-upload: ${entry.title}`.slice(0, 80);
+    const body = [
+      "<!-- klavierxml-exchange-upload -->",
+      "```json",
+      JSON.stringify(
+        {
+          id: entry.id,
+          title: entry.title,
+          composer: entry.composer,
+          credit: entry.credit,
+          filename: entry.filename,
+          format: "mxl",
+          bytes: entry.bytes,
+          ownerEmailHash: entry.ownerEmailHash,
+          added: entry.added,
+          license: entry.license,
+          packageUrl,
+        },
+        null,
+        2
+      ),
+      "```",
+      "",
+      "This issue was opened from the MusicXML exchange upload form.",
+    ].join("\n");
+    const url = `https://github.com/${EXCHANGE_REPO}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const openRemoveIssue = (item, secret) => {
+    const title = `exchange-remove: ${item.id}`.slice(0, 80);
+    const body = [
+      "<!-- klavierxml-exchange-remove -->",
+      "```json",
+      JSON.stringify(
+        {
+          id: item.id,
+          title: item.title,
+          secret,
+        },
+        null,
+        2
+      ),
+      "```",
+    ].join("\n");
+    const url = `https://github.com/${EXCHANGE_REPO}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const publishSharedScore = async (entry, blob) => {
+    const catalog = await fetchSharedCatalog();
+    if (catalog.scores.length >= MAX_FILES) {
+      throw new Error(
+        `The shared exchange already has ${MAX_FILES} scores. Remove one before uploading another.`
+      );
+    }
+    if (catalog.scores.some((score) => score.id === entry.id)) {
+      return sharedDownloadUrl(entry);
+    }
+
+    const filePath = sharedFilePath(entry.id);
+    const relativeFile = `files/${entry.id}.mxl`;
+    const nextEntry = {
+      id: entry.id,
+      title: entry.title,
+      composer: entry.composer,
+      credit: entry.credit,
+      filename: entry.filename,
+      format: "mxl",
+      bytes: entry.bytes,
+      ownerEmailHash: entry.ownerEmailHash,
+      added: entry.added,
+      file: relativeFile,
+      license: entry.license,
+    };
+    const nextCatalog = {
+      updated: new Date().toISOString().slice(0, 10),
+      scores: [nextEntry, ...catalog.scores].slice(0, MAX_FILES),
+    };
+
+    try {
+      const contentBase64 = await blobToBase64(blob);
+      await githubPutContent(
+        filePath,
+        contentBase64,
+        `exchange: add ${entry.filename}`
+      );
+      const manifestMeta = await githubGetContentMeta(
+        "exchange/shared-manifest.json"
+      );
+      const catalogBase64 = btoa(
+        unescape(encodeURIComponent(JSON.stringify(nextCatalog, null, 2)))
+      );
+      await githubPutContent(
+        "exchange/shared-manifest.json",
+        catalogBase64,
+        `exchange: list ${entry.title}`,
+        manifestMeta?.sha
+      );
+      sharedScores = nextCatalog.scores;
+      return relativeFile;
+    } catch (err) {
+      if (!String(err.message || "").includes("NO_TOKEN") && getPublishToken()) {
+        throw err;
+      }
+      // Tokenless fallback: stage the package publicly, then open a GitHub issue
+      // that the exchange Action turns into a shared score for everyone.
+      const packageUrl = await uploadPackageToDpaste({
+        ...nextEntry,
+        contentBase64: await blobToBase64(blob),
+      });
+      openPublishIssue(nextEntry, packageUrl);
+      entry.pendingPackageUrl = packageUrl;
+      throw new Error("CONFIRM_ISSUE");
+    }
+  };
+
+  const removeSharedScore = async (item, secret) => {
+    try {
+      const catalog = await fetchSharedCatalog();
+      const nextScores = catalog.scores.filter((score) => score.id !== item.id);
+      const nextCatalog = {
+        updated: new Date().toISOString().slice(0, 10),
+        scores: nextScores,
+      };
+      const fileMeta = await githubGetContentMeta(sharedFilePath(item.id));
+      if (fileMeta?.sha) {
+        await githubDeleteContent(
+          sharedFilePath(item.id),
+          `exchange: remove ${item.filename || item.id}`,
+          fileMeta.sha
+        );
+      }
+      const manifestMeta = await githubGetContentMeta(
+        "exchange/shared-manifest.json"
+      );
+      const catalogBase64 = btoa(
+        unescape(encodeURIComponent(JSON.stringify(nextCatalog, null, 2)))
+      );
+      await githubPutContent(
+        "exchange/shared-manifest.json",
+        catalogBase64,
+        `exchange: unlist ${item.title || item.id}`,
+        manifestMeta?.sha
+      );
+      sharedScores = nextScores;
+    } catch (err) {
+      if (!String(err.message || "").includes("NO_TOKEN") && getPublishToken()) {
+        throw err;
+      }
+      openRemoveIssue(item, secret);
+      throw new Error("CONFIRM_ISSUE_REMOVE");
     }
   };
 
@@ -153,7 +466,7 @@
 
   const updateCount = () => {
     if (!countEl) return;
-    countEl.textContent = `${localScores.length} on this device · ${community.length} community · max ${MAX_FILES} saved here`;
+    countEl.textContent = `${sharedScores.length} shared · ${builtin.length} built-in · ${localScores.length} on this device · max ${MAX_FILES} shared`;
   };
 
   const matchesQuery = (item) => {
@@ -163,20 +476,34 @@
   };
 
   const visibleItems = () => {
-    const communityItems = community.map((item) => ({
+    const builtinItems = builtin.map((item) => ({
       ...item,
-      source: "community",
+      source: "builtin",
+    }));
+    const sharedItems = sharedScores.map((item) => ({
+      ...item,
+      source: "shared",
     }));
     const localItems = localScores.map((item) => ({
       ...item,
       source: "local",
     }));
-    let items =
-      activeTab === "community"
-        ? communityItems
-        : activeTab === "local"
-          ? localItems
-          : [...localItems, ...communityItems];
+
+    let items;
+    if (activeTab === "community") {
+      items = [...sharedItems, ...builtinItems];
+    } else if (activeTab === "local") {
+      items = localItems;
+    } else {
+      const seen = new Set();
+      items = [];
+      [...sharedItems, ...localItems, ...builtinItems].forEach((item) => {
+        const key = item.id || `${item.source}-${item.title}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        items.push(item);
+      });
+    }
     return items.filter(matchesQuery);
   };
 
@@ -411,7 +738,11 @@
       const badge = document.createElement("span");
       badge.className = "exchange-badge";
       badge.textContent =
-        item.source === "local" ? "On this device" : "Community";
+        item.source === "local"
+          ? "On this device"
+          : item.source === "shared"
+            ? "Shared"
+            : "Built-in";
 
       const title = document.createElement("h3");
       title.textContent = item.title;
@@ -442,22 +773,28 @@
       downloadBtn.textContent = "Download";
       downloadBtn.addEventListener("click", async () => {
         try {
-          if (item.source === "local") {
+          if (item.source === "local" && item.blob) {
             downloadBlob(item.blob, item.filename);
-          } else {
-            const res = await fetch(`exchange/${item.file}`);
-            if (!res.ok) throw new Error("Download failed");
-            const blob = await res.blob();
-            const name = item.file.split("/").pop();
-            downloadBlob(blob, name);
+            return;
           }
+          if (item.source === "shared") {
+            const res = await fetch(sharedDownloadUrl(item));
+            if (!res.ok) throw new Error("Download failed");
+            downloadBlob(await res.blob(), item.filename || `${item.id}.mxl`);
+            return;
+          }
+          const res = await fetch(`exchange/${item.file}`);
+          if (!res.ok) throw new Error("Download failed");
+          const blob = await res.blob();
+          const name = item.file.split("/").pop();
+          downloadBlob(blob, name);
         } catch (err) {
           setStatus(err.message || "Could not download that score.", "error");
         }
       });
       actions.append(downloadBtn);
 
-      if (item.source === "local") {
+      if (item.source === "local" || item.source === "shared") {
         const removeBtn = document.createElement("button");
         removeBtn.type = "button";
         removeBtn.className = "btn btn-ghost";
@@ -473,11 +810,16 @@
     });
   };
 
-  const loadCommunity = async () => {
+  const loadBuiltin = async () => {
     const res = await fetch("exchange/manifest.json", { cache: "no-store" });
-    if (!res.ok) throw new Error("Could not load the community library.");
+    if (!res.ok) throw new Error("Could not load the built-in library.");
     const data = await res.json();
-    community = (Array.isArray(data.scores) ? data.scores : []).slice(0, MAX_FILES);
+    builtin = (Array.isArray(data.scores) ? data.scores : []).slice(0, MAX_FILES);
+  };
+
+  const loadShared = async () => {
+    const catalog = await fetchSharedCatalog();
+    sharedScores = catalog.scores;
   };
 
   const readFile = (file) =>
@@ -542,9 +884,9 @@
       setStatus("That file is larger than 8 MB.", "error");
       return;
     }
-    if (localScores.length >= MAX_FILES) {
+    if (sharedScores.length >= MAX_FILES) {
       setStatus(
-        `This device already has ${MAX_FILES} scores. Remove one before uploading another.`,
+        `The shared exchange already has ${MAX_FILES} scores. Remove one before uploading another.`,
         "error"
       );
       return;
@@ -564,13 +906,14 @@
       const buffer = await readFile(file);
       const prepared = await prepareScoreFile(file, ext, buffer);
       const ownerEmailHash = await hashEmail(email);
+      const id = `shared-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const record = {
-        id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        id,
         title,
         composer: composer || "Uploaded score",
         credit: prepared.converted
-          ? "Converted to MXL · saved on this device"
-          : "Saved on this device",
+          ? "Converted to MXL · shared exchange"
+          : "Shared exchange",
         filename: prepared.filename.endsWith(".mxl")
           ? prepared.filename
           : `${stemFromFile(prepared.filename)}.mxl`,
@@ -580,46 +923,63 @@
         ownerEmailHash,
         added: new Date().toISOString().slice(0, 10),
         license:
-          "Uploaded by you. Only share files you have rights to distribute.",
+          "Uploaded by a community member. Only share files you have rights to distribute.",
       };
 
-      // Enforce the limit again in case of overlapping uploads.
+      setStatus("Publishing for everyone…");
+      try {
+        await publishSharedScore(record, prepared.blob);
+      } catch (err) {
+        if (String(err.message || "") === "CONFIRM_ISSUE") {
+          // Keep a local copy so the uploader can still download immediately.
+          localScores = await loadLocal();
+          if (localScores.length >= MAX_FILES) {
+            const oldest = [...localScores].sort((a, b) =>
+              String(a.added).localeCompare(String(b.added))
+            )[0];
+            if (oldest) await deleteLocal(oldest.id);
+          }
+          await saveLocal(record);
+          localScores = await loadLocal();
+          activeTab = "local";
+          tabs.forEach((tab) => {
+            const on = tab.dataset.tab === "local";
+            tab.classList.toggle("is-active", on);
+            tab.setAttribute("aria-selected", on ? "true" : "false");
+          });
+          render();
+          form.reset();
+          fileNameEl.textContent = "No file chosen";
+          setStatus(
+            "Score staged. Confirm the GitHub issue that just opened to publish it for everyone."
+          );
+          return;
+        }
+        throw err;
+      }
+
+      // Keep a local copy for faster re-download on this device.
       localScores = await loadLocal();
       if (localScores.length >= MAX_FILES) {
-        setStatus(
-          `This device already has ${MAX_FILES} scores. Remove one before uploading another.`,
-          "error"
-        );
-        return;
+        const oldest = [...localScores].sort((a, b) =>
+          String(a.added).localeCompare(String(b.added))
+        )[0];
+        if (oldest) await deleteLocal(oldest.id);
       }
-
       await saveLocal(record);
       localScores = await loadLocal();
-      if (localScores.length > MAX_FILES) {
-        // Keep the newest MAX_FILES entries if somehow over.
-        const sorted = [...localScores].sort((a, b) =>
-          String(b.added).localeCompare(String(a.added))
-        );
-        const keep = new Set(sorted.slice(0, MAX_FILES).map((item) => item.id));
-        await Promise.all(
-          localScores
-            .filter((item) => !keep.has(item.id))
-            .map((item) => deleteLocal(item.id))
-        );
-        localScores = await loadLocal();
-      }
 
-      activeTab = "local";
+      activeTab = "community";
       tabs.forEach((tab) => {
-        const on = tab.dataset.tab === "local";
+        const on = tab.dataset.tab === "community";
         tab.classList.toggle("is-active", on);
         tab.setAttribute("aria-selected", on ? "true" : "false");
       });
       render();
 
-      let shared = false;
+      let sharedMail = false;
       try {
-        shared = await maybeEmailShare(
+        sharedMail = await maybeEmailShare(
           prepared.blob,
           record.filename,
           title,
@@ -629,7 +989,10 @@
       } catch (err) {
         form.reset();
         fileNameEl.textContent = "No file chosen";
-        setStatus(err.message, "error");
+        setStatus(
+          `Published for everyone, but notify email failed. ${err.message}`,
+          "error"
+        );
         return;
       }
 
@@ -637,9 +1000,9 @@
       fileNameEl.textContent = "No file chosen";
       const convertedNote = prepared.converted ? " Converted to MXL." : "";
       setStatus(
-        shared
-          ? `Saved on this device as MXL and sent for community review.${convertedNote}`
-          : `Saved on this device as MXL. You can download it below.${convertedNote}`
+        sharedMail
+          ? `Published for everyone and emailed for review.${convertedNote}`
+          : `Published for everyone. Anyone can download it below.${convertedNote}`
       );
     } catch (err) {
       setStatus(err.message || "Upload failed.", "error");
@@ -677,7 +1040,7 @@
 
   removeForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const item = localScores.find((score) => score.id === pendingRemoveId);
+    const item = pendingRemove;
     if (!item) {
       closeRemoveModal();
       setStatus("That score is no longer available.", "error");
@@ -696,18 +1059,44 @@
       return;
     }
 
-    await deleteLocal(item.id);
-    localScores = await loadLocal();
-    closeRemoveModal();
-    render();
-    setStatus("Removed from this device.");
+    try {
+      if (item.source === "shared" || String(item.id || "").startsWith("shared-")) {
+        try {
+          await removeSharedScore(item, secret);
+        } catch (err) {
+          if (String(err.message || "") === "CONFIRM_ISSUE_REMOVE") {
+            closeRemoveModal();
+            setStatus(
+              "Removal staged. Confirm the GitHub issue that just opened to remove it for everyone."
+            );
+            return;
+          }
+          throw err;
+        }
+      }
+      if (localScores.some((score) => score.id === item.id)) {
+        await deleteLocal(item.id);
+        localScores = await loadLocal();
+      }
+      closeRemoveModal();
+      render();
+      setStatus("Removed from the exchange.");
+    } catch (err) {
+      if (removeError) {
+        removeError.hidden = false;
+        removeError.textContent = err.message || "Could not remove that score.";
+      }
+    }
   });
 
   (async () => {
     try {
       await Promise.all([
-        loadCommunity().catch(() => {
-          community = [];
+        loadBuiltin().catch(() => {
+          builtin = [];
+        }),
+        loadShared().catch(() => {
+          sharedScores = [];
         }),
         loadLocal()
           .then(async (rows) => {

@@ -32,8 +32,8 @@
         <h1 class="legal-title">MusicXML exchange</h1>
         <p class="legal-lede">
           Download shared <code>.xml</code>, <code>.musicxml</code>, and
-          <code>.mxl</code> scores, or upload your own to keep on this device and
-          offer to the community.
+          <code>.mxl</code> scores, or upload your own. Uploaded scores are
+          published for everyone to download. Your email stays private.
         </p>
       </header>
 
@@ -43,9 +43,9 @@
           <h2 id="upload-heading">Add a score</h2>
           <p>
             Choose a MusicXML or MXL file. XML uploads are converted to
-            compressed <code>.mxl</code> automatically. Files are saved in this
-            browser (up to 100 on this device). Your email is required, kept
-            private, and used only to authorize removal.
+            compressed <code>.mxl</code> automatically and published so
+            anyone can download them. Your email stays private and is only
+            used to authorize removal.
           </p>
         </div>
 
@@ -61,7 +61,7 @@
             <span class="file-drop-title">Drop a score here, or browse</span>
             <span class="file-drop-hint"
               >Accepted: .xml, .musicxml, .mxl · XML → MXL · max 8&nbsp;MB · max
-              100 files</span
+              100 shared files</span
             >
             <span class="file-drop-name" id="file-name">No file chosen</span>
           </label>
@@ -108,9 +108,8 @@
             <label class="upload-check">
               <input id="score-share" name="share" type="checkbox" checked />
               <span
-                >Also send this file to
-                <a href="mailto:rudilueg@gmail.com">rudilueg@gmail.com</a> for
-                the community library</span
+                >Also email a copy to
+                <a href="mailto:rudilueg@gmail.com">rudilueg@gmail.com</a></span
               >
             </label>
           </div>
@@ -248,6 +247,7 @@
     </div>
 
     <script src="app.js" defer></script>
+    <script src="exchange-config.js" defer></script>
     <script src="player.js" defer></script>
     <script src="exchange.js" defer></script>
   </body>

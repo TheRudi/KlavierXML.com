@@ -1,1 +1,18 @@
-{"updated":"2026-10-02","scores":[{"id":"browser-test","title":"Browser Test","composer":"Test","filename":"test.mxl","format":"mxl","bytes":0,"ownerEmailHash":"x","added":"2026-10-02","downloadUrl":""}]}
+{
+  "updated": "2026-10-02",
+  "scores": [
+    {
+      "id": "shared-demo-birthday",
+      "title": "Happy Birthday",
+      "composer": "Patty & Mildred Hill",
+      "credit": "Shared exchange demo",
+      "filename": "Hill-Happy_Birthday.mxl",
+      "format": "mxl",
+      "bytes": 2824,
+      "ownerEmailHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "added": "2026-10-02",
+      "file": "files/shared-demo-birthday.mxl",
+      "license": "Uploaded for the shared exchange demo. Public domain melody."
+    }
+  ]
+}
