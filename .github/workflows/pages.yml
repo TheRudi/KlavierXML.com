@@ -26,9 +26,9 @@ jobs:
       - name: Prepare site
         run: |
           mkdir _site
-          cp index.html licenses.html styles.css app.js player.js favicon.svg KlavierLicense.txt _site/
+          cp index.html licenses.html exchange.html styles.css app.js player.js exchange.js favicon.svg KlavierLicense.txt _site/
           if [ -f CNAME ]; then cp CNAME _site/; fi
-          cp -r scores piano fonts videos _site/
+          cp -r scores piano fonts videos exchange _site/
           touch _site/.nojekyll
       - name: Setup Pages
         uses: actions/configure-pages@v5

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MusicXML Exchange — KlavierXML</title>
+    <meta
+      name="description"
+      content="Upload and download MusicXML and MXL piano scores on the KlavierXML exchange."
+    />
+    <link rel="canonical" href="https://klavierxml.com/exchange.html" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="page-exchange">
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header site-header-solid">
+      <a class="wordmark" href="index.html">Klavier<span>XML</span></a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="index.html#musicxml">MusicXML</a>
+        <a href="index.html#get-songs">Get songs</a>
+        <a href="exchange.html" aria-current="page">Exchange</a>
+        <a href="licenses.html">Licenses</a>
+        <a class="nav-cta" href="index.html#privacy">Privacy</a>
+      </nav>
+    </header>
+
+    <main id="main" class="exchange-main">
+      <header class="legal-hero">
+        <p class="section-kicker">Community</p>
+        <h1 class="legal-title">MusicXML exchange</h1>
+        <p class="legal-lede">
+          Download shared <code>.xml</code>, <code>.musicxml</code>, and
+          <code>.mxl</code> scores, or upload your own to keep on this device and
+          offer to the community.
+        </p>
+      </header>
+
+      <section class="exchange-panel" aria-labelledby="upload-heading">
+        <div class="exchange-panel-copy">
+          <p class="section-kicker">Upload</p>
+          <h2 id="upload-heading">Add a score</h2>
+          <p>
+            Choose a MusicXML or MXL file. It is saved in this browser so you can
+            download it again anytime on this device. You can also send it for
+            community review.
+          </p>
+        </div>
+
+        <form class="upload-form" id="upload-form">
+          <label class="file-drop" for="score-file">
+            <input
+              id="score-file"
+              name="score"
+              type="file"
+              accept=".xml,.musicxml,.mxl,application/xml,text/xml,application/vnd.recordare.musicxml,application/vnd.recordare.musicxml+xml"
+              required
+            />
+            <span class="file-drop-title">Drop a score here, or browse</span>
+            <span class="file-drop-hint"
+              >Accepted: .xml, .musicxml, .mxl · max 8&nbsp;MB</span
+            >
+            <span class="file-drop-name" id="file-name">No file chosen</span>
+          </label>
+
+          <div class="upload-fields">
+            <label>
+              Title
+              <input
+                id="score-title"
+                name="title"
+                type="text"
+                maxlength="120"
+                placeholder="e.g. Minuet in G"
+                autocomplete="off"
+              />
+            </label>
+            <label>
+              Composer / credit
+              <input
+                id="score-composer"
+                name="composer"
+                type="text"
+                maxlength="160"
+                placeholder="e.g. J.S. Bach"
+                autocomplete="off"
+              />
+            </label>
+            <label class="upload-check">
+              <input id="score-share" name="share" type="checkbox" checked />
+              <span
+                >Also send this file to
+                <a href="mailto:rudilueg@gmail.com">rudilueg@gmail.com</a> for
+                the community library</span
+              >
+            </label>
+          </div>
+
+          <div class="cta-row">
+            <button class="btn btn-primary" type="submit">Upload score</button>
+            <button class="btn btn-ghost" type="reset">Clear</button>
+          </div>
+          <p class="upload-status" id="upload-status" role="status"></p>
+        </form>
+      </section>
+
+      <section class="exchange-library" aria-labelledby="library-heading">
+        <div class="library-head">
+          <div>
+            <p class="section-kicker">Library</p>
+            <h2 id="library-heading">Browse scores</h2>
+          </div>
+          <label class="library-filter">
+            <span class="visually-hidden">Filter scores</span>
+            <input
+              id="library-search"
+              type="search"
+              placeholder="Search title or composer"
+              autocomplete="off"
+            />
+          </label>
+        </div>
+
+        <div class="library-tabs" role="tablist" aria-label="Score sources">
+          <button
+            type="button"
+            class="library-tab is-active"
+            role="tab"
+            aria-selected="true"
+            data-tab="all"
+          >
+            All
+          </button>
+          <button
+            type="button"
+            class="library-tab"
+            role="tab"
+            aria-selected="false"
+            data-tab="community"
+          >
+            Community
+          </button>
+          <button
+            type="button"
+            class="library-tab"
+            role="tab"
+            aria-selected="false"
+            data-tab="local"
+          >
+            On this device
+          </button>
+        </div>
+
+        <ul class="exchange-list" id="exchange-list"></ul>
+        <p class="library-empty" id="library-empty" hidden>
+          No scores match this view yet. Upload an XML or MXL file to get
+          started.
+        </p>
+      </section>
+
+      <aside class="exchange-note">
+        <p>
+          Please only share scores you have the right to distribute. Prefer
+          public-domain music, files you created, or files the copyright holder
+          allows you to share.
+        </p>
+        <p>
+          Questions?
+          <a href="mailto:rudilueg@gmail.com">rudilueg@gmail.com</a>
+          · Rüdiger Lueg
+        </p>
+      </aside>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <p class="footer-brand">KlavierXML</p>
+        <p>
+          <a href="index.html">Home</a>
+          ·
+          <a href="exchange.html">Exchange</a>
+          ·
+          <a href="licenses.html">Licenses</a>
+          · © <span id="year"></span> Rüdiger Lueg
+        </p>
+        <p class="contact-line">
+          Contact:
+          <a href="mailto:rudilueg@gmail.com">rudilueg@gmail.com</a>
+        </p>
+      </div>
+    </footer>
+
+    <script src="app.js" defer></script>
+    <script src="exchange.js" defer></script>
+  </body>
+</html>
