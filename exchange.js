@@ -800,8 +800,18 @@
       return;
     }
 
-    const title = (titleInput.value || titleFromFile(file.name)).trim();
+    const title = (titleInput.value || "").trim();
     const composer = (composerInput.value || "").trim();
+    if (title.length < 2) {
+      setStatus("Title must be at least 2 characters.", "error");
+      titleInput.focus();
+      return;
+    }
+    if (composer.length < 2) {
+      setStatus("Composer must be at least 2 characters.", "error");
+      composerInput.focus();
+      return;
+    }
 
     try {
       setStatus(ext === "mxl" ? "Uploading…" : "Converting XML to MXL…");
@@ -811,7 +821,7 @@
       const record = {
         id,
         title,
-        composer: composer || "Uploaded score",
+        composer,
         credit: prepared.converted
           ? "Converted to MXL · shared exchange"
           : "Shared exchange",
