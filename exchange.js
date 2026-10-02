@@ -1,7 +1,8 @@
 (() => {
   const DB_NAME = "klavierxml-exchange";
   const STORE = "scores";
-  const MAX_BYTES = 50 * 1024;
+  const MAX_MXL_BYTES = 100 * 1024;
+  const MAX_XML_BYTES = 1024 * 1024 * 1024;
   const MAX_FILES = 100;
   const ALLOWED = new Set(["xml", "musicxml", "mxl"]);
   const EXCHANGE_REPO = "TheRudi/KlavierXML.com";
@@ -653,9 +654,9 @@
   const xmlToMxl = async (xmlBuffer, originalName) => {
     const scoreText = normalizeMusicXml(xmlBuffer);
     const archive = await buildMxlArchive(scoreText);
-    if (archive.length > MAX_BYTES) {
+    if (archive.length > MAX_MXL_BYTES) {
       throw new Error(
-        "Converted MXL is larger than 50 KB. Use a smaller score."
+        "Converted MXL is larger than 100 KB. Use a smaller score."
       );
     }
     const filename = `${stemFromFile(originalName) || "score"}.mxl`;
@@ -671,8 +672,8 @@
       if (bytes.length < 4 || bytes[0] !== 0x50 || bytes[1] !== 0x4b) {
         throw new Error("That .mxl file is not a valid MusicXML archive.");
       }
-      if (bytes.length > MAX_BYTES) {
-        throw new Error("That MXL file is larger than 50 KB.");
+      if (bytes.length > MAX_MXL_BYTES) {
+        throw new Error("That MXL file is larger than 100 KB.");
       }
       return {
         blob: new Blob([buffer], {
@@ -835,8 +836,12 @@
       setStatus("Only .xml, .musicxml, and .mxl files are accepted.", "error");
       return;
     }
-    if (file.size > MAX_BYTES) {
-      setStatus("That file is larger than 50 KB.", "error");
+    if (ext === "mxl" && file.size > MAX_MXL_BYTES) {
+      setStatus("That MXL file is larger than 100 KB.", "error");
+      return;
+    }
+    if ((ext === "xml" || ext === "musicxml") && file.size > MAX_XML_BYTES) {
+      setStatus("That XML file is larger than 1 GB.", "error");
       return;
     }
     if (sharedScores.length >= MAX_FILES) {
