@@ -49,7 +49,8 @@
         </div>
 
         <form class="upload-form" id="upload-form">
-          <label class="file-drop" for="score-file">
+          <label class="file-picker" for="score-file">
+            <span class="file-picker-label">Score file</span>
             <input
               id="score-file"
               name="score"
@@ -57,12 +58,11 @@
               accept=".xml,.musicxml,.mxl,application/xml,text/xml,application/vnd.recordare.musicxml,application/vnd.recordare.musicxml+xml"
               required
             />
-            <span class="file-drop-title">Drop a score here, or browse</span>
-            <span class="file-drop-hint"
+            <span class="file-picker-hint"
               >Accepted: .xml, .musicxml, .mxl · XML → MXL · XML max 1&nbsp;GB ·
               MXL max 100&nbsp;KB · max 100 shared files</span
             >
-            <span class="file-drop-name" id="file-name">No file chosen</span>
+            <span class="file-picker-name" id="file-name">No file chosen</span>
           </label>
 
           <div class="upload-fields">

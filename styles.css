@@ -1240,44 +1240,30 @@ button {
   gap: 1rem;
 }
 
-.file-drop {
-  position: relative;
+.file-picker {
   display: grid;
-  gap: 0.35rem;
-  padding: 1.35rem 1.25rem;
-  border: 1px dashed rgba(224, 176, 122, 0.45);
-  border-radius: 1rem;
-  background: rgba(20, 25, 34, 0.55);
-  cursor: pointer;
-  transition: border-color 0.2s var(--ease-out), background 0.2s var(--ease-out);
+  gap: 0.45rem;
 }
 
-.file-drop:hover,
-.file-drop:focus-within {
-  border-color: rgba(224, 176, 122, 0.8);
-  background: rgba(224, 176, 122, 0.06);
+.file-picker-label {
+  font-size: 0.92rem;
+  color: var(--ivory-mute);
 }
 
-.file-drop input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.file-drop-title {
-  font-weight: 560;
+.file-picker input[type="file"] {
+  width: 100%;
+  max-width: 100%;
   color: var(--ivory);
+  font: inherit;
 }
 
-.file-drop-hint,
-.file-drop-name {
+.file-picker-hint,
+.file-picker-name {
   color: var(--ivory-mute);
   font-size: 0.92rem;
 }
 
-.file-drop-name {
-  margin-top: 0.35rem;
+.file-picker-name {
   color: var(--amber);
 }
 
