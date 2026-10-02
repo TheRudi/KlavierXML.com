@@ -31,9 +31,9 @@
         <p class="section-kicker">Community</p>
         <h1 class="legal-title">MusicXML exchange</h1>
         <p class="legal-lede">
-          Download community <code>.xml</code>, <code>.musicxml</code>, and
-          <code>.mxl</code> scores, or upload your own. XML uploads are converted
-          to MXL and saved so you can download them here.
+          Download <code>.xml</code>, <code>.musicxml</code>, and
+          <code>.mxl</code> scores from anywhere, or upload your own. Uploads
+          are published for everyone.
         </p>
       </header>
 
@@ -43,8 +43,8 @@
           <h2 id="upload-heading">Add a score</h2>
           <p>
             Choose a MusicXML or MXL file. XML uploads are converted to
-            compressed <code>.mxl</code> automatically. Your upload stays on
-            this device for download.
+            compressed <code>.mxl</code> automatically and published so anyone
+            can download them.
           </p>
         </div>
 
@@ -116,35 +116,16 @@
           </label>
         </div>
 
-        <div class="library-tabs" role="tablist" aria-label="Score sources">
-          <button
-            type="button"
-            class="library-tab is-active"
-            role="tab"
-            aria-selected="true"
-            data-tab="all"
-          >
-            All
-          </button>
-          <button
-            type="button"
-            class="library-tab"
-            role="tab"
-            aria-selected="false"
-            data-tab="community"
-          >
-            Community
-          </button>
-          <button
-            type="button"
-            class="library-tab"
-            role="tab"
-            aria-selected="false"
-            data-tab="local"
-          >
-            On this device
-          </button>
-        </div>
+        <label class="library-admin">
+          Admin password
+          <input
+            id="admin-password"
+            type="password"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="Required to show Remove"
+          />
+        </label>
 
         <ul class="exchange-list" id="exchange-list"></ul>
         <p class="library-empty" id="library-empty" hidden>

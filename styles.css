@@ -1454,25 +1454,27 @@ button {
   font: inherit;
 }
 
-.library-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
+.library-admin {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0 0 1.25rem;
+  color: var(--ivory-mute);
+  font-size: 0.85rem;
 }
 
-.library-tab {
-  padding: 0.45rem 0.9rem;
+.library-admin input {
+  width: min(100%, 22rem);
+  padding: 0.7rem 0.9rem;
   border: 1px solid var(--ink-line);
-  border-radius: 999px;
-  color: var(--ivory-soft);
-  font-size: 0.9rem;
+  border-radius: 0.5rem;
+  background: rgba(12, 15, 20, 0.65);
+  color: var(--ivory);
+  font: inherit;
 }
 
-.library-tab.is-active {
-  border-color: rgba(224, 176, 122, 0.55);
-  background: rgba(224, 176, 122, 0.12);
-  color: var(--ivory);
+.library-admin input:focus {
+  outline: 1px solid rgba(224, 176, 122, 0.45);
+  border-color: rgba(224, 176, 122, 0.45);
 }
 
 .exchange-list {

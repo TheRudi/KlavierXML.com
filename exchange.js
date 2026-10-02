@@ -5,6 +5,7 @@
   const MAX_XML_BYTES = 1024 * 1024 * 1024;
   const MAX_FILES = 100;
   const ALLOWED = new Set(["xml", "musicxml", "mxl"]);
+  const REMOVE_PASSWORD = "Kla4FürW3n1ger€";
   const EXCHANGE_REPO = "TheRudi/KlavierXML.com";
   const EXCHANGE_BRANCHES = [
     window.KlavierExchangeConfig?.branch,
@@ -22,16 +23,18 @@
   const composerInput = document.getElementById("score-composer");
   const searchInput = document.getElementById("library-search");
   const countEl = document.getElementById("library-count");
-  const tabs = document.querySelectorAll(".library-tab");
+  const adminPasswordInput = document.getElementById("admin-password");
 
   if (!listEl || !form) return;
 
   let builtin = [];
   let sharedScores = [];
   let localScores = [];
-  let activeTab = "all";
   let query = "";
   let exchangeBranch = EXCHANGE_BRANCHES[0] || "main";
+
+  const canShowRemove = () =>
+    String(adminPasswordInput?.value || "") === REMOVE_PASSWORD;
 
   const getPublishToken = () =>
     String(
@@ -168,8 +171,6 @@
   };
 
   const publishSharedScore = async (entry, blob) => {
-    if (!getPublishToken()) return false;
-
     const catalog = await fetchSharedCatalog();
     if (catalog.scores.length >= MAX_FILES) {
       throw new Error(
@@ -177,7 +178,14 @@
       );
     }
     if (catalog.scores.some((score) => score.id === entry.id)) {
+      sharedScores = catalog.scores;
       return true;
+    }
+
+    if (!getPublishToken()) {
+      // Without a publish token, keep the score available in this browser
+      // and rely on local storage. Remote publish requires exchange-config token.
+      return false;
     }
 
     const filePath = sharedFilePath(entry.id);
@@ -353,7 +361,8 @@
 
   const updateCount = () => {
     if (!countEl) return;
-    countEl.textContent = `${sharedScores.length} shared · ${builtin.length} built-in · ${localScores.length} on this device · max ${MAX_FILES} shared`;
+    const total = visibleItems().length;
+    countEl.textContent = `${total} score${total === 1 ? "" : "s"} · max ${MAX_FILES}`;
   };
 
   const matchesQuery = (item) => {
@@ -376,21 +385,14 @@
       source: "local",
     }));
 
-    let items;
-    if (activeTab === "community") {
-      items = [...sharedItems, ...builtinItems];
-    } else if (activeTab === "local") {
-      items = localItems;
-    } else {
-      const seen = new Set();
-      items = [];
-      [...sharedItems, ...localItems, ...builtinItems].forEach((item) => {
-        const key = item.id || `${item.source}-${item.title}`;
-        if (seen.has(key)) return;
-        seen.add(key);
-        items.push(item);
-      });
-    }
+    const seen = new Set();
+    const items = [];
+    [...sharedItems, ...localItems, ...builtinItems].forEach((item) => {
+      const key = item.id || `${item.source}-${item.title}-${item.file || item.filename}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      items.push(item);
+    });
     return items.filter(matchesQuery);
   };
 
@@ -689,7 +691,7 @@
       });
       actions.append(downloadBtn);
 
-      if (item.source === "local" || (item.source === "shared" && getPublishToken())) {
+      if (canShowRemove() && (item.source === "local" || item.source === "shared")) {
         const removeBtn = document.createElement("button");
         removeBtn.type = "button";
         removeBtn.className = "btn btn-ghost";
@@ -758,9 +760,9 @@
       setStatus("That XML file is larger than 1 GB.", "error");
       return;
     }
-    if (localScores.length >= MAX_FILES) {
+    if (sharedScores.length >= MAX_FILES) {
       setStatus(
-        `This device already has ${MAX_FILES} scores. Remove one before uploading another.`,
+        `The shared library already has ${MAX_FILES} scores. Remove one before uploading another.`,
         "error"
       );
       return;
@@ -773,14 +775,14 @@
       setStatus(ext === "mxl" ? "Uploading…" : "Converting XML to MXL…");
       const buffer = await readFile(file);
       const prepared = await prepareScoreFile(file, ext, buffer);
-      const id = `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const id = `shared-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const record = {
         id,
         title,
         composer: composer || "Uploaded score",
         credit: prepared.converted
-          ? "Converted to MXL · on this device"
-          : "On this device",
+          ? "Converted to MXL · shared exchange"
+          : "Shared exchange",
         filename: prepared.filename.endsWith(".mxl")
           ? prepared.filename
           : `${stemFromFile(prepared.filename)}.mxl`,
@@ -789,16 +791,16 @@
         blob: prepared.blob,
         added: new Date().toISOString().slice(0, 10),
         license:
-          "Uploaded by you. Only share files you have rights to distribute.",
+          "Uploaded by a community member. Only share files you have rights to distribute.",
       };
 
-      // Optional shared publish when a token is configured — never opens GitHub.
+      setStatus("Publishing for everyone…");
       let publishedShared = false;
       if (getPublishToken()) {
-        setStatus("Publishing…");
         publishedShared = await publishSharedScore(record, prepared.blob);
       }
 
+      // Keep a local cache for faster re-download on this device.
       localScores = await loadLocal();
       if (localScores.length >= MAX_FILES) {
         const oldest = [...localScores].sort((a, b) =>
@@ -809,14 +811,7 @@
       await saveLocal(record);
       localScores = await loadLocal();
 
-      activeTab = publishedShared ? "community" : "local";
-      tabs.forEach((tab) => {
-        const on = tab.dataset.tab === activeTab;
-        tab.classList.toggle("is-active", on);
-        tab.setAttribute("aria-selected", on ? "true" : "false");
-      });
       render();
-
       form.reset();
       fileNameEl.textContent = "No file chosen";
       const convertedNote = prepared.converted ? " Converted to MXL." : "";
@@ -830,20 +825,12 @@
     }
   });
 
-  tabs.forEach((tab) => {
-    tab.addEventListener("click", () => {
-      activeTab = tab.dataset.tab || "all";
-      tabs.forEach((other) => {
-        const on = other === tab;
-        other.classList.toggle("is-active", on);
-        other.setAttribute("aria-selected", on ? "true" : "false");
-      });
-      render();
-    });
-  });
-
   searchInput?.addEventListener("input", () => {
     query = searchInput.value.trim().toLowerCase();
+    render();
+  });
+
+  adminPasswordInput?.addEventListener("input", () => {
     render();
   });
 

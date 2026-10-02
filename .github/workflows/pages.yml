@@ -30,6 +30,23 @@ jobs:
           if [ -f CNAME ]; then cp CNAME _site/; fi
           cp -r scores piano fonts videos exchange _site/
           touch _site/.nojekyll
+          if [ -n "${EXCHANGE_TOKEN}" ]; then
+            python3 - <<'PY'
+          import json, os
+          token = os.environ["EXCHANGE_TOKEN"]
+          config = {
+            "token": token,
+            "branch": "main",
+          }
+          # Keep this as assignable JS config for the exchange publisher.
+          open("_site/exchange-config.js", "w").write(
+              "window.KlavierExchangeConfig = %s;\n" % json.dumps(config)
+          )
+          print("Injected exchange publish token into site config")
+          PY
+          fi
+        env:
+          EXCHANGE_TOKEN: ${{ secrets.EXCHANGE_TOKEN }}
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
