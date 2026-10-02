@@ -187,7 +187,9 @@
         blob: new Blob([buffer], {
           type: file.type || "application/vnd.recordare.musicxml",
         }),
-        filename: file.name.replace(/\.(xml|musicxml)$/i, "") || file.name,
+        filename: file.name.toLowerCase().endsWith(".mxl")
+          ? file.name
+          : `${stemFromFile(file.name)}.mxl`,
         bytes: file.size,
         converted: false,
       };
@@ -467,8 +469,23 @@
           community = [];
         }),
         loadLocal()
-          .then((rows) => {
-            localScores = rows.slice(0, MAX_FILES);
+          .then(async (rows) => {
+            if (rows.length > MAX_FILES) {
+              const sorted = [...rows].sort((a, b) =>
+                String(b.added || "").localeCompare(String(a.added || ""))
+              );
+              const keep = new Set(
+                sorted.slice(0, MAX_FILES).map((item) => item.id)
+              );
+              await Promise.all(
+                rows
+                  .filter((item) => !keep.has(item.id))
+                  .map((item) => deleteLocal(item.id))
+              );
+              localScores = await loadLocal();
+            } else {
+              localScores = rows;
+            }
           })
           .catch(() => {
             localScores = [];
