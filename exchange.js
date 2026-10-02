@@ -953,6 +953,31 @@
           setStatus(
             "Score staged. Confirm the GitHub issue that just opened to publish it for everyone."
           );
+          // Watch for the Action to publish the shared score.
+          let tries = 0;
+          const poll = window.setInterval(async () => {
+            tries += 1;
+            try {
+              await loadShared();
+              render();
+              if (sharedScores.some((score) => score.id === record.id)) {
+                window.clearInterval(poll);
+                activeTab = "community";
+                tabs.forEach((tab) => {
+                  const on = tab.dataset.tab === "community";
+                  tab.classList.toggle("is-active", on);
+                  tab.setAttribute("aria-selected", on ? "true" : "false");
+                });
+                render();
+                setStatus(
+                  "Published for everyone. Anyone can download it below."
+                );
+              }
+            } catch (err) {
+              // keep polling briefly
+            }
+            if (tries >= 24) window.clearInterval(poll);
+          }, 5000);
           return;
         }
         throw err;
