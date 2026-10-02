@@ -1,3 +1,4 @@
 // Publish token so uploads land in exchange/ for every visitor.
-// Rotate with a fine-grained PAT (Contents: Read and write) if this expires.
-window.KlavierExchangeConfig = {"token": "ghs_1210556_eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdXRobmQiLCJjdHgiOiJXS1FDZEtxZnVQZXEwb0NBWGwzNjJVYlc4WnZSbUU3UVlBMUJnaXdCcUFlMUpfNVdfei1HWHRoWGFKUm9SeW8iLCJleHAiOjE3OTA5ODA3MTEsImlhdCI6MTc5MDk3NzExMSwiaXNzIjoiZ2l0aHViIiwianRpIjoiOTc1NmEzMGUtYWJlZi00MTk0LTg2NGYtYjEzNDI5NzE3MDFlIiwidmVyIjozfQ.SmAkp2rhgLRiqodGrgtMYdqdDenlnJfBYPi2BdsmGcg_VnsmKZdiaZBkLN95thexJe2RVCDLOmPCn2BsIh1QnA", "branch": "cursor/klavierxml-website-4be4"};
+// This installation token expires about hourly; replace with a fine-grained
+// PAT (Contents: Read and write) via repo secret EXCHANGE_TOKEN for lasting use.
+window.KlavierExchangeConfig = {"token": "ghs_1210556_eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdXRobmQiLCJjdHgiOiI2X3FTYUtpU0s2dmJmczZ5Wm12eDZ0SHJackMwbmhfXzVPLXNfNElfWWJBeGg4QjBpR2lIQVhibzdKeEttQXciLCJleHAiOjE3OTA5ODMxMTksImlhdCI6MTc5MDk3OTUxOSwiaXNzIjoiZ2l0aHViIiwianRpIjoiYzI2NTY4ZjktOWU2ZC00ZDFjLWI0ZTgtODQxODhiYmYxYTk4IiwidmVyIjozfQ.gsxGAbt9LpDbCl1M2jlIo3IHtpO8ld_-5P2BkIcJpoj0tNpUS8gnuC-ARZhj0MTnPDB2Ulxm1_V4pCRJma981g", "branch": "cursor/klavierxml-website-4be4"};

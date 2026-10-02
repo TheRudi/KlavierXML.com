@@ -172,6 +172,11 @@
     );
     if (!res.ok) {
       const detail = await res.text();
+      if (res.status === 401 || res.status === 403) {
+        throw new Error(
+          "Publish credentials expired or are invalid. Update the exchange publish token and try again."
+        );
+      }
       throw new Error(
         `Could not publish to GitHub (${res.status}). ${detail.slice(0, 180)}`
       );
