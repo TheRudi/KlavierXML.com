@@ -2,6 +2,18 @@
   "updated": "2026-10-02",
   "scores": [
     {
+      "id": "shared-1790979381432-vnny0s",
+      "title": "Community Shared Scale 1790979381325",
+      "composer": "Cross User Tester",
+      "credit": "Shared exchange",
+      "filename": "community-upload.mxl",
+      "format": "mxl",
+      "bytes": 492,
+      "added": "2026-10-02",
+      "file": "files/shared-1790979381432-vnny0s.mxl",
+      "license": "Uploaded by a community member. Only share files you have rights to distribute."
+    },
+    {
       "id": "shared-demo-birthday",
       "title": "Happy Birthday",
       "composer": "Patty & Mildred Hill",
