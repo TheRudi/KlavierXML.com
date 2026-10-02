@@ -4,7 +4,6 @@
   const MAX_BYTES = 8 * 1024 * 1024;
   const MAX_FILES = 100;
   const ALLOWED = new Set(["xml", "musicxml", "mxl"]);
-  const REMOVE_MASTER_PASSWORD = "RAL";
   const EXCHANGE_REPO = "TheRudi/KlavierXML.com";
   const EXCHANGE_BRANCHES = [
     window.KlavierExchangeConfig?.branch,
@@ -20,16 +19,10 @@
   const fileNameEl = document.getElementById("file-name");
   const titleInput = document.getElementById("score-title");
   const composerInput = document.getElementById("score-composer");
-  const emailInput = document.getElementById("score-email");
   const shareInput = document.getElementById("score-share");
   const searchInput = document.getElementById("library-search");
   const countEl = document.getElementById("library-count");
   const tabs = document.querySelectorAll(".library-tab");
-  const removeModal = document.getElementById("remove-modal");
-  const removeForm = document.getElementById("remove-form");
-  const removeSecretInput = document.getElementById("remove-secret");
-  const removeScoreTitle = document.getElementById("remove-score-title");
-  const removeError = document.getElementById("remove-error");
 
   if (!listEl || !form) return;
 
@@ -38,53 +31,7 @@
   let localScores = [];
   let activeTab = "all";
   let query = "";
-  let pendingRemove = null;
   let exchangeBranch = EXCHANGE_BRANCHES[0] || "main";
-
-  const normalizeEmail = (value) => String(value || "").trim().toLowerCase();
-
-  const isValidEmail = (value) =>
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(value));
-
-  const hashEmail = async (email) => {
-    const data = new TextEncoder().encode(normalizeEmail(email));
-    const digest = await crypto.subtle.digest("SHA-256", data);
-    return [...new Uint8Array(digest)]
-      .map((byte) => byte.toString(16).padStart(2, "0"))
-      .join("");
-  };
-
-  const canRemoveScore = async (item, secret) => {
-    const value = String(secret || "").trim();
-    if (!value) return false;
-    if (value === REMOVE_MASTER_PASSWORD) return true;
-    if (!item.ownerEmailHash) return false;
-    if (!isValidEmail(value)) return false;
-    const hashed = await hashEmail(value);
-    return hashed === item.ownerEmailHash;
-  };
-
-  const openRemoveModal = (item) => {
-    pendingRemove = item;
-    if (removeScoreTitle) removeScoreTitle.textContent = item.title || "this score";
-    if (removeSecretInput) removeSecretInput.value = "";
-    if (removeError) {
-      removeError.hidden = true;
-      removeError.textContent = "";
-    }
-    if (removeModal) removeModal.hidden = false;
-    window.setTimeout(() => removeSecretInput?.focus(), 0);
-  };
-
-  const closeRemoveModal = () => {
-    pendingRemove = null;
-    if (removeModal) removeModal.hidden = true;
-    if (removeSecretInput) removeSecretInput.value = "";
-    if (removeError) {
-      removeError.hidden = true;
-      removeError.textContent = "";
-    }
-  };
 
   const getPublishToken = () =>
     String(
@@ -249,7 +196,6 @@
           filename: entry.filename,
           format: "mxl",
           bytes: entry.bytes,
-          ownerEmailHash: entry.ownerEmailHash,
           added: entry.added,
           license: entry.license,
           packageUrl,
@@ -265,7 +211,7 @@
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
-  const openRemoveIssue = (item, secret) => {
+  const openRemoveIssue = (item) => {
     const title = `exchange-remove: ${item.id}`.slice(0, 80);
     const body = [
       "<!-- klavierxml-exchange-remove -->",
@@ -274,7 +220,6 @@
         {
           id: item.id,
           title: item.title,
-          secret,
         },
         null,
         2
@@ -306,7 +251,6 @@
       filename: entry.filename,
       format: "mxl",
       bytes: entry.bytes,
-      ownerEmailHash: entry.ownerEmailHash,
       added: entry.added,
       file: relativeFile,
       license: entry.license,
@@ -353,7 +297,7 @@
     }
   };
 
-  const removeSharedScore = async (item, secret) => {
+  const removeSharedScore = async (item) => {
     try {
       const catalog = await fetchSharedCatalog();
       const nextScores = catalog.scores.filter((score) => score.id !== item.id);
@@ -386,8 +330,37 @@
       if (!String(err.message || "").includes("NO_TOKEN") && getPublishToken()) {
         throw err;
       }
-      openRemoveIssue(item, secret);
+      openRemoveIssue(item);
       throw new Error("CONFIRM_ISSUE_REMOVE");
+    }
+  };
+
+  const removeScore = async (item) => {
+    const label = item.title || "this score";
+    if (!window.confirm(`Remove “${label}” from the exchange?`)) return;
+
+    try {
+      if (item.source === "shared" || String(item.id || "").startsWith("shared-")) {
+        try {
+          await removeSharedScore(item);
+        } catch (err) {
+          if (String(err.message || "") === "CONFIRM_ISSUE_REMOVE") {
+            setStatus(
+              "Removal staged. Confirm the GitHub issue that just opened to remove it for everyone."
+            );
+            return;
+          }
+          throw err;
+        }
+      }
+      if (localScores.some((score) => score.id === item.id)) {
+        await deleteLocal(item.id);
+        localScores = await loadLocal();
+      }
+      render();
+      setStatus("Removed from the exchange.");
+    } catch (err) {
+      setStatus(err.message || "Could not remove that score.", "error");
     }
   };
 
@@ -800,7 +773,7 @@
         removeBtn.className = "btn btn-ghost";
         removeBtn.textContent = "Remove";
         removeBtn.addEventListener("click", () => {
-          openRemoveModal(item);
+          removeScore(item);
         });
         actions.append(removeBtn);
       }
@@ -830,13 +803,13 @@
       reader.readAsArrayBuffer(file);
     });
 
-  const maybeEmailShare = async (fileOrBlob, filename, title, composer, email) => {
+  const maybeEmailShare = async (fileOrBlob, filename, title, composer) => {
     if (!shareInput?.checked) return false;
     const body = new FormData();
     body.append("_subject", `KlavierXML exchange upload: ${title}`);
     body.append(
       "message",
-      `A MusicXML/MXL score was offered to the community library.\n\nTitle: ${title}\nComposer/credit: ${composer || "(none)"}\nUploader email: ${email}\nFilename: ${filename}\nSize: ${fileOrBlob.size} bytes\n`
+      `A MusicXML/MXL score was offered to the community library.\n\nTitle: ${title}\nComposer/credit: ${composer || "(none)"}\nFilename: ${filename}\nSize: ${fileOrBlob.size} bytes\n`
     );
     body.append("score", fileOrBlob, filename);
     body.append("_template", "table");
@@ -894,18 +867,11 @@
 
     const title = (titleInput.value || titleFromFile(file.name)).trim();
     const composer = (composerInput.value || "").trim();
-    const email = normalizeEmail(emailInput?.value);
-    if (!isValidEmail(email)) {
-      setStatus("Add a valid email so this score can be removed later.", "error");
-      emailInput?.focus();
-      return;
-    }
 
     try {
       setStatus(ext === "mxl" ? "Uploading…" : "Converting XML to MXL…");
       const buffer = await readFile(file);
       const prepared = await prepareScoreFile(file, ext, buffer);
-      const ownerEmailHash = await hashEmail(email);
       const id = `shared-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const record = {
         id,
@@ -920,7 +886,6 @@
         format: "mxl",
         bytes: prepared.bytes,
         blob: prepared.blob,
-        ownerEmailHash,
         added: new Date().toISOString().slice(0, 10),
         license:
           "Uploaded by a community member. Only share files you have rights to distribute.",
@@ -1008,8 +973,7 @@
           prepared.blob,
           record.filename,
           title,
-          composer,
-          email
+          composer
         );
       } catch (err) {
         form.reset();
@@ -1049,69 +1013,6 @@
   searchInput?.addEventListener("input", () => {
     query = searchInput.value.trim().toLowerCase();
     render();
-  });
-
-  removeModal?.querySelectorAll("[data-close-modal]").forEach((el) => {
-    el.addEventListener("click", () => {
-      closeRemoveModal();
-    });
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && removeModal && !removeModal.hidden) {
-      closeRemoveModal();
-    }
-  });
-
-  removeForm?.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const item = pendingRemove;
-    if (!item) {
-      closeRemoveModal();
-      setStatus("That score is no longer available.", "error");
-      return;
-    }
-
-    const secret = removeSecretInput?.value || "";
-    const allowed = await canRemoveScore(item, secret);
-    if (!allowed) {
-      if (removeError) {
-        removeError.hidden = false;
-        removeError.textContent =
-          "Email or password did not match. Try again.";
-      }
-      removeSecretInput?.focus();
-      return;
-    }
-
-    try {
-      if (item.source === "shared" || String(item.id || "").startsWith("shared-")) {
-        try {
-          await removeSharedScore(item, secret);
-        } catch (err) {
-          if (String(err.message || "") === "CONFIRM_ISSUE_REMOVE") {
-            closeRemoveModal();
-            setStatus(
-              "Removal staged. Confirm the GitHub issue that just opened to remove it for everyone."
-            );
-            return;
-          }
-          throw err;
-        }
-      }
-      if (localScores.some((score) => score.id === item.id)) {
-        await deleteLocal(item.id);
-        localScores = await loadLocal();
-      }
-      closeRemoveModal();
-      render();
-      setStatus("Removed from the exchange.");
-    } catch (err) {
-      if (removeError) {
-        removeError.hidden = false;
-        removeError.textContent = err.message || "Could not remove that score.";
-      }
-    }
   });
 
   (async () => {

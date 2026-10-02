@@ -41,12 +41,10 @@ jobs:
           script: |
             const fs = require('fs');
             const path = require('path');
-            const crypto = require('crypto');
 
             const title = process.env.ISSUE_TITLE || '';
             const body = process.env.ISSUE_BODY || '';
             const issueNumber = Number(process.env.ISSUE_NUMBER);
-            const master = 'RAL';
             const maxFiles = 100;
 
             const extractJson = (text) => {
@@ -100,7 +98,6 @@ jobs:
                   filename: payload.filename || `${payload.id}.mxl`,
                   format: 'mxl',
                   bytes: payload.bytes || buffer.length,
-                  ownerEmailHash: payload.ownerEmailHash || pack.ownerEmailHash || '',
                   added: payload.added || new Date().toISOString().slice(0, 10),
                   file: rel,
                   license:
@@ -118,15 +115,6 @@ jobs:
               if (!item) {
                 core.info('Score not found; nothing to remove');
               } else {
-                const secret = String(payload.secret || '').trim();
-                const emailHash = crypto
-                  .createHash('sha256')
-                  .update(secret.toLowerCase())
-                  .digest('hex');
-                const allowed =
-                  secret === master ||
-                  (item.ownerEmailHash && emailHash === item.ownerEmailHash);
-                if (!allowed) throw new Error('Remove secret did not match');
                 if (item.file) {
                   const filePath = path.join('exchange', item.file);
                   if (fs.existsSync(filePath)) fs.unlinkSync(filePath);

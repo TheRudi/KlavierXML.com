@@ -33,7 +33,7 @@
         <p class="legal-lede">
           Download shared <code>.xml</code>, <code>.musicxml</code>, and
           <code>.mxl</code> scores, or upload your own. Uploaded scores are
-          published for everyone to download. Your email stays private.
+          published for everyone to download.
         </p>
       </header>
 
@@ -44,8 +44,7 @@
           <p>
             Choose a MusicXML or MXL file. XML uploads are converted to
             compressed <code>.mxl</code> automatically and published so
-            anyone can download them. Your email stays private and is only
-            used to authorize removal.
+            anyone can download them.
           </p>
         </div>
 
@@ -88,22 +87,6 @@
                 placeholder="e.g. J.S. Bach"
                 autocomplete="off"
               />
-            </label>
-            <label>
-              Your email
-              <input
-                id="score-email"
-                name="email"
-                type="email"
-                maxlength="200"
-                placeholder="you@example.com"
-                autocomplete="email"
-                required
-              />
-              <span class="field-hint"
-                >Kept private and linked to this score. Needed later to remove
-                it.</span
-              >
             </label>
             <label class="upload-check">
               <input id="score-share" name="share" type="checkbox" checked />
@@ -208,43 +191,6 @@
         </p>
       </div>
     </footer>
-
-    <div
-      class="auth-modal"
-      id="remove-modal"
-      hidden
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="remove-modal-title"
-    >
-      <div class="auth-modal-backdrop" data-close-modal></div>
-      <form class="auth-modal-panel" id="remove-form">
-        <p class="section-kicker">Remove score</p>
-        <h2 id="remove-modal-title">Confirm removal</h2>
-        <p class="auth-modal-copy">
-          Enter the uploader email for
-          <strong id="remove-score-title">this score</strong>, or the removal
-          password.
-        </p>
-        <label>
-          Email or password
-          <input
-            id="remove-secret"
-            type="text"
-            autocomplete="off"
-            required
-            placeholder="you@example.com or password"
-          />
-        </label>
-        <p class="auth-modal-error" id="remove-error" role="alert" hidden></p>
-        <div class="cta-row">
-          <button class="btn btn-primary" type="submit">Remove score</button>
-          <button class="btn btn-ghost" type="button" data-close-modal>
-            Cancel
-          </button>
-        </div>
-      </form>
-    </div>
 
     <script src="app.js" defer></script>
     <script src="exchange-config.js" defer></script>
