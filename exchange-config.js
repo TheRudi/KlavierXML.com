@@ -8,5 +8,5 @@
 // Note: the postgres:// connection string is NOT used here. Use the anon key.
 window.KlavierExchangeConfig = {
   supabaseUrl: "https://teesveninvkrouztkgjy.supabase.co",
-  supabaseAnonKey: "",
+  supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlZXN2ZW5pbnZrcm91enRrZ2p5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NzQyODUsImV4cCI6MjEwNjU1MDI4NX0.H1iiDZn0DEi9aScx3MdG5Ni_YjyKV5VPvbnHvt4bbgM",
 };
