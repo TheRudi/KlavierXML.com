@@ -766,6 +766,11 @@
           }),
       ]);
       render();
+      if (!getSupabase()) {
+        setStatus(
+          "Shared uploads need Supabase. Add supabaseUrl and supabaseAnonKey to exchange-config.js after running exchange/supabase-setup.sql."
+        );
+      }
     } catch (err) {
       setStatus(err.message || "Could not open the exchange.", "error");
     }
