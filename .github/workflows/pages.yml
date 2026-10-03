@@ -1,0 +1,57 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main, cursor/klavierxml-website-4be4]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Prepare site
+        run: |
+          mkdir _site
+          cp index.html licenses.html exchange.html styles.css app.js player.js exchange.js exchange-config.js favicon.svg KlavierLicense.txt _site/
+          if [ -f CNAME ]; then cp CNAME _site/; fi
+          cp -r scores piano fonts videos exchange _site/
+          touch _site/.nojekyll
+          if [ -n "${SUPABASE_URL}" ] && [ -n "${SUPABASE_ANON_KEY}" ]; then
+            python3 - <<'PY'
+          import json, os
+          config = {
+              "supabaseUrl": os.environ["SUPABASE_URL"],
+              "supabaseAnonKey": os.environ["SUPABASE_ANON_KEY"],
+          }
+          open("_site/exchange-config.js", "w").write(
+              "window.KlavierExchangeConfig = %s;\n" % json.dumps(config)
+          )
+          print("Injected Supabase exchange config into site")
+          PY
+          fi
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
