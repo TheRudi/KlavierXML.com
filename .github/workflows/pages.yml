@@ -30,25 +30,22 @@ jobs:
           if [ -f CNAME ]; then cp CNAME _site/; fi
           cp -r scores piano fonts videos exchange _site/
           touch _site/.nojekyll
-          if [ -n "${EXCHANGE_TOKEN}" ]; then
+          if [ -n "${SUPABASE_URL}" ] && [ -n "${SUPABASE_ANON_KEY}" ]; then
             python3 - <<'PY'
           import json, os
-          token = os.environ["EXCHANGE_TOKEN"]
-          branch = os.environ.get("EXCHANGE_BRANCH", "cursor/klavierxml-website-4be4")
           config = {
-              "token": token,
-              "branch": branch,
+              "supabaseUrl": os.environ["SUPABASE_URL"],
+              "supabaseAnonKey": os.environ["SUPABASE_ANON_KEY"],
           }
-          # Keep this as assignable JS config for the exchange publisher.
           open("_site/exchange-config.js", "w").write(
               "window.KlavierExchangeConfig = %s;\n" % json.dumps(config)
           )
-          print("Injected exchange publish token into site config")
+          print("Injected Supabase exchange config into site")
           PY
           fi
         env:
-          EXCHANGE_TOKEN: ${{ secrets.EXCHANGE_TOKEN }}
-          EXCHANGE_BRANCH: cursor/klavierxml-website-4be4
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact

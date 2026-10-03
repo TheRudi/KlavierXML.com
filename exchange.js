@@ -6,12 +6,7 @@
   const MAX_FILES = 100;
   const ALLOWED = new Set(["xml", "musicxml", "mxl"]);
   const REMOVE_PASSWORD = "Kla4FürW3n1ger€";
-  const EXCHANGE_REPO = "TheRudi/KlavierXML.com";
-  const EXCHANGE_BRANCHES = [
-    window.KlavierExchangeConfig?.branch,
-    "cursor/klavierxml-website-4be4",
-    "main",
-  ].filter(Boolean);
+  const STORAGE_BUCKET = "exchange";
 
   const listEl = document.getElementById("exchange-list");
   const emptyEl = document.getElementById("library-empty");
@@ -31,186 +26,88 @@
   let sharedScores = [];
   let localScores = [];
   let query = "";
-  let exchangeBranch = EXCHANGE_BRANCHES[0] || "main";
+  let supabaseClient = null;
 
   const canShowRemove = () =>
     String(adminPasswordInput?.value || "") === REMOVE_PASSWORD;
 
-  const getPublishToken = () =>
-    String(
-      window.KlavierExchangeConfig?.token ||
-        window.localStorage.getItem("klavierxml-exchange-token") ||
-        ""
+  const getSupabaseConfig = () => {
+    const url = String(window.KlavierExchangeConfig?.supabaseUrl || "").trim();
+    const anonKey = String(
+      window.KlavierExchangeConfig?.supabaseAnonKey || ""
     ).trim();
-
-  // Reads use the public GitHub API (no token). Sending an expired publish
-  // token makes GitHub return 401 even for public files and leaves browsers
-  // on different fallback catalogs.
-  const githubHeaders = (token, extra = {}) => ({
-    Accept: "application/vnd.github+json",
-    "X-GitHub-Api-Version": "2022-11-28",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...extra,
-  });
-
-  const resolveExchangeBranch = async () => {
-    for (const branch of EXCHANGE_BRANCHES) {
-      try {
-        const res = await fetch(
-          `https://api.github.com/repos/${EXCHANGE_REPO}/contents/exchange/shared-manifest.json?ref=${encodeURIComponent(branch)}`,
-          { headers: githubHeaders() }
-        );
-        if (res.ok) {
-          exchangeBranch = branch;
-          return branch;
-        }
-      } catch (err) {
-        // try next branch
-      }
-    }
-    exchangeBranch = EXCHANGE_BRANCHES[0] || "main";
-    return exchangeBranch;
+    return { url, anonKey };
   };
 
-  const sharedFilePath = (id) => `exchange/files/${id}.mxl`;
+  const getSupabase = () => {
+    if (supabaseClient) return supabaseClient;
+    const { url, anonKey } = getSupabaseConfig();
+    if (!url || !anonKey) return null;
+    if (!window.supabase?.createClient) {
+      throw new Error("Supabase library failed to load. Refresh and try again.");
+    }
+    supabaseClient = window.supabase.createClient(url, anonKey);
+    return supabaseClient;
+  };
 
-  const sharedRepoPath = (item) =>
-    item.file ? `exchange/${item.file}` : sharedFilePath(item.id);
+  const requireSupabase = () => {
+    const client = getSupabase();
+    if (!client) {
+      throw new Error(
+        "Supabase is not configured yet. Add supabaseUrl and supabaseAnonKey to exchange-config.js."
+      );
+    }
+    return client;
+  };
+
+  const storagePathFor = (id) => `files/${id}.mxl`;
+
+  const rowToScore = (row) => ({
+    id: row.id,
+    title: row.title,
+    composer: row.composer,
+    credit: row.credit || "",
+    filename: row.filename,
+    format: row.format || "mxl",
+    bytes: row.bytes || 0,
+    added: row.added || "",
+    file: row.storage_path || storagePathFor(row.id),
+    license: row.license || "",
+    storage_path: row.storage_path || storagePathFor(row.id),
+  });
 
   const fetchSharedBlob = async (item) => {
-    await resolveExchangeBranch();
-    const path = sharedRepoPath(item);
-    const meta = await githubGetContentMeta(path);
-    if (meta?.content && meta.encoding === "base64") {
-      const binary = atob(String(meta.content).replace(/\n/g, ""));
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
-      return new Blob([bytes], { type: "application/vnd.recordare.musicxml" });
+    const client = requireSupabase();
+    const path = item.storage_path || item.file || storagePathFor(item.id);
+    const { data, error } = await client.storage.from(STORAGE_BUCKET).download(path);
+    if (error || !data) {
+      throw new Error(error?.message || "Download failed");
     }
-    if (meta?.download_url) {
-      const res = await fetch(meta.download_url, { cache: "no-store" });
-      if (!res.ok) throw new Error("Download failed");
-      return res.blob();
-    }
-    // Fallback to the Pages copy after a rebuild.
-    const res = await fetch(path.replace(/^exchange\//, "exchange/"));
-    if (!res.ok) throw new Error("Download failed");
-    return res.blob();
+    return data;
   };
 
   const fetchSharedCatalog = async () => {
-    await resolveExchangeBranch();
-    // Prefer GitHub so new uploads are visible to every visitor immediately,
-    // even before GitHub Pages finishes rebuilding. Never send the publish
-    // token on reads — an expired token causes 401 and inconsistent lists.
-    try {
-      const res = await fetch(
-        `https://api.github.com/repos/${EXCHANGE_REPO}/contents/exchange/shared-manifest.json?ref=${encodeURIComponent(exchangeBranch)}`,
-        { headers: githubHeaders(), cache: "no-store" }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        const decoded = JSON.parse(
-          atob(String(data.content || "").replace(/\n/g, ""))
-        );
-        return {
-          updated: decoded.updated || "",
-          scores: Array.isArray(decoded.scores)
-            ? decoded.scores.slice(0, MAX_FILES)
-            : [],
-          sha: data.sha || null,
-        };
-      }
-      if (res.status === 404) return { updated: "", scores: [], sha: null };
-    } catch (err) {
-      // Fall through to the static site copy.
+    const client = getSupabase();
+    if (!client) {
+      return { scores: [] };
     }
-
-    try {
-      const localRes = await fetch(`exchange/shared-manifest.json?t=${Date.now()}`, {
-        cache: "no-store",
-      });
-      if (localRes.ok) {
-        const data = await localRes.json();
-        return {
-          updated: data.updated || "",
-          scores: Array.isArray(data.scores) ? data.scores.slice(0, MAX_FILES) : [],
-          sha: null,
-        };
-      }
-    } catch (err) {
-      // ignore
+    const { data, error } = await client
+      .from("exchange_scores")
+      .select(
+        "id, title, composer, credit, filename, format, bytes, added, license, storage_path"
+      )
+      .order("created_at", { ascending: false })
+      .limit(MAX_FILES);
+    if (error) {
+      throw new Error(error.message || "Could not load the shared exchange library.");
     }
-
-    throw new Error("Could not load the shared exchange library.");
-  };
-
-  const blobToBase64 = (blob) =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = String(reader.result || "");
-        const base64 = result.includes(",") ? result.split(",")[1] : result;
-        resolve(base64);
-      };
-      reader.onerror = () => reject(new Error("Could not read the score file."));
-      reader.readAsDataURL(blob);
-    });
-
-  const githubPutContent = async (path, contentBase64, message, sha) => {
-    const token = getPublishToken();
-    if (!token) throw new Error("NO_TOKEN");
-    await resolveExchangeBranch();
-    const res = await fetch(
-      `https://api.github.com/repos/${EXCHANGE_REPO}/contents/${path}`,
-      {
-        method: "PUT",
-        headers: githubHeaders(token, { "Content-Type": "application/json" }),
-        body: JSON.stringify({
-          message,
-          content: contentBase64,
-          branch: exchangeBranch,
-          ...(sha ? { sha } : {}),
-        }),
-      }
-    );
-    if (!res.ok) {
-      const detail = await res.text();
-      if (res.status === 401 || res.status === 403) {
-        throw new Error(
-          "Publish credentials expired. Add a fine-grained GitHub PAT (Contents: Read and write) to exchange-config.js."
-        );
-      }
-      throw new Error(
-        `Could not publish to GitHub (${res.status}). ${detail.slice(0, 180)}`
-      );
-    }
-    return res.json();
-  };
-
-  const githubDeleteContent = async (path, message, sha) => {
-    const token = getPublishToken();
-    if (!token || !sha) return;
-    await resolveExchangeBranch();
-    await fetch(`https://api.github.com/repos/${EXCHANGE_REPO}/contents/${path}`, {
-      method: "DELETE",
-      headers: githubHeaders(token, { "Content-Type": "application/json" }),
-      body: JSON.stringify({ message, sha, branch: exchangeBranch }),
-    });
-  };
-
-  const githubGetContentMeta = async (path) => {
-    await resolveExchangeBranch();
-    const res = await fetch(
-      `https://api.github.com/repos/${EXCHANGE_REPO}/contents/${path}?ref=${encodeURIComponent(exchangeBranch)}`,
-      { headers: githubHeaders(), cache: "no-store" }
-    );
-    if (res.status === 404) return null;
-    if (!res.ok) return null;
-    return res.json();
+    return {
+      scores: (Array.isArray(data) ? data : []).map(rowToScore),
+    };
   };
 
   const publishSharedScore = async (entry, blob) => {
+    const client = requireSupabase();
     const catalog = await fetchSharedCatalog();
     if (catalog.scores.length >= MAX_FILES) {
       throw new Error(
@@ -222,15 +119,18 @@
       return true;
     }
 
-    if (!getPublishToken()) {
-      // Without a publish token, keep the score available in this browser
-      // and rely on local storage. Remote publish requires exchange-config token.
-      return false;
+    const storagePath = storagePathFor(entry.id);
+    const { error: uploadError } = await client.storage
+      .from(STORAGE_BUCKET)
+      .upload(storagePath, blob, {
+        contentType: "application/vnd.recordare.musicxml",
+        upsert: false,
+      });
+    if (uploadError) {
+      throw new Error(uploadError.message || "Could not upload the score file.");
     }
 
-    const filePath = sharedFilePath(entry.id);
-    const relativeFile = `files/${entry.id}.mxl`;
-    const nextEntry = {
+    const row = {
       id: entry.id,
       title: entry.title,
       composer: entry.composer,
@@ -239,67 +139,31 @@
       format: "mxl",
       bytes: entry.bytes,
       added: entry.added,
-      file: relativeFile,
       license: entry.license,
+      storage_path: storagePath,
     };
-    const nextCatalog = {
-      updated: new Date().toISOString().slice(0, 10),
-      scores: [nextEntry, ...catalog.scores].slice(0, MAX_FILES),
-    };
+    const { error: insertError } = await client.from("exchange_scores").insert(row);
+    if (insertError) {
+      await client.storage.from(STORAGE_BUCKET).remove([storagePath]);
+      throw new Error(insertError.message || "Could not publish the score listing.");
+    }
 
-    const contentBase64 = await blobToBase64(blob);
-    await githubPutContent(
-      filePath,
-      contentBase64,
-      `exchange: add ${entry.filename}`
-    );
-    const manifestMeta = await githubGetContentMeta(
-      "exchange/shared-manifest.json"
-    );
-    const catalogBase64 = btoa(
-      unescape(encodeURIComponent(JSON.stringify(nextCatalog, null, 2)))
-    );
-    await githubPutContent(
-      "exchange/shared-manifest.json",
-      catalogBase64,
-      `exchange: list ${entry.title}`,
-      manifestMeta?.sha
-    );
-    sharedScores = nextCatalog.scores;
+    sharedScores = [rowToScore(row), ...catalog.scores].slice(0, MAX_FILES);
     return true;
   };
 
   const removeSharedScore = async (item) => {
-    if (!getPublishToken()) {
-      throw new Error("Shared scores cannot be removed from this browser.");
+    const client = requireSupabase();
+    const path = item.storage_path || item.file || storagePathFor(item.id);
+    const { error: dbError } = await client
+      .from("exchange_scores")
+      .delete()
+      .eq("id", item.id);
+    if (dbError) {
+      throw new Error(dbError.message || "Could not remove that score.");
     }
-    const catalog = await fetchSharedCatalog();
-    const nextScores = catalog.scores.filter((score) => score.id !== item.id);
-    const nextCatalog = {
-      updated: new Date().toISOString().slice(0, 10),
-      scores: nextScores,
-    };
-    const fileMeta = await githubGetContentMeta(sharedFilePath(item.id));
-    if (fileMeta?.sha) {
-      await githubDeleteContent(
-        sharedFilePath(item.id),
-        `exchange: remove ${item.filename || item.id}`,
-        fileMeta.sha
-      );
-    }
-    const manifestMeta = await githubGetContentMeta(
-      "exchange/shared-manifest.json"
-    );
-    const catalogBase64 = btoa(
-      unescape(encodeURIComponent(JSON.stringify(nextCatalog, null, 2)))
-    );
-    await githubPutContent(
-      "exchange/shared-manifest.json",
-      catalogBase64,
-      `exchange: unlist ${item.title || item.id}`,
-      manifestMeta?.sha
-    );
-    sharedScores = nextScores;
+    await client.storage.from(STORAGE_BUCKET).remove([path]);
+    sharedScores = sharedScores.filter((score) => score.id !== item.id);
   };
 
   const removeScore = async (item) => {
@@ -307,13 +171,6 @@
     if (!window.confirm(`Remove “${label}” from the exchange?`)) return;
 
     try {
-      if (item.source === "local") {
-        await deleteLocal(item.id);
-        localScores = await loadLocal();
-        render();
-        setStatus("Removed from this device.");
-        return;
-      }
       if (item.source === "shared") {
         await removeSharedScore(item);
         render();
@@ -838,11 +695,6 @@
       };
 
       setStatus("Publishing for everyone…");
-      if (!getPublishToken()) {
-        throw new Error(
-          "Publish credentials are missing. Update the exchange publish token and try again."
-        );
-      }
       const publishedShared = await publishSharedScore(record, prepared.blob);
       if (!publishedShared) {
         throw new Error("Could not publish this score for everyone. Try again.");
