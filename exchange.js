@@ -427,6 +427,84 @@
 
   const stripBom = (text) => text.replace(/^\uFEFF/, "");
 
+  const xmlElementText = (el) => String(el?.textContent || "").trim();
+
+  const scoreHasTitle = (doc) =>
+    [...doc.querySelectorAll("work-title, movement-title")].some(
+      (el) => xmlElementText(el).length > 0
+    );
+
+  const scoreHasComposer = (doc) =>
+    [...doc.querySelectorAll("creator")].some((el) => {
+      const type = String(el.getAttribute("type") || "composer").toLowerCase();
+      return type === "composer" && xmlElementText(el).length > 0;
+    });
+
+  const insertAfterRootOpen = (doc, root, node) => {
+    const first = root.firstChild;
+    if (first) root.insertBefore(node, first);
+    else root.appendChild(node);
+  };
+
+  // MusicXML order: work, movement-*, identification, …
+  const ensureXmlMetadata = (xmlText, title, composer) => {
+    const wantedTitle = String(title || "").trim();
+    const wantedComposer = String(composer || "").trim();
+    if (!wantedTitle && !wantedComposer) return xmlText;
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlText, "application/xml");
+    if (doc.querySelector("parsererror")) {
+      throw new Error("That MusicXML file could not be parsed.");
+    }
+    const root =
+      doc.getElementsByTagName("score-partwise")[0] ||
+      doc.getElementsByTagName("score-timewise")[0];
+    if (!root) return xmlText;
+
+    if (wantedTitle && !scoreHasTitle(doc)) {
+      let work = root.getElementsByTagName("work")[0];
+      if (!work) {
+        work = doc.createElement("work");
+        insertAfterRootOpen(doc, root, work);
+      }
+      const workTitle = doc.createElement("work-title");
+      workTitle.textContent = wantedTitle;
+      work.insertBefore(workTitle, work.firstChild);
+    }
+
+    if (wantedComposer && !scoreHasComposer(doc)) {
+      let identification = root.getElementsByTagName("identification")[0];
+      if (!identification) {
+        identification = doc.createElement("identification");
+        const work = root.getElementsByTagName("work")[0];
+        const movementTitle = root.getElementsByTagName("movement-title")[0];
+        const movementNumber = root.getElementsByTagName("movement-number")[0];
+        const anchor = work || movementNumber || movementTitle;
+        if (anchor?.nextSibling) {
+          root.insertBefore(identification, anchor.nextSibling);
+        } else if (anchor) {
+          root.appendChild(identification);
+        } else {
+          insertAfterRootOpen(doc, root, identification);
+        }
+      }
+      const creator = doc.createElement("creator");
+      creator.setAttribute("type", "composer");
+      creator.textContent = wantedComposer;
+      const encoding = identification.getElementsByTagName("encoding")[0];
+      if (encoding) identification.insertBefore(creator, encoding);
+      else identification.insertBefore(creator, identification.firstChild);
+    }
+
+    const serialized = new XMLSerializer().serializeToString(doc);
+    // Keep an XML declaration if the source had one.
+    if (/^\s*<\?xml\b/i.test(xmlText) && !/^\s*<\?xml\b/i.test(serialized)) {
+      return `<?xml version="1.0" encoding="UTF-8"?>\n${serialized}`;
+    }
+    return serialized;
+  };
+
   const normalizeMusicXml = (buffer) => {
     let text = stripBom(new TextDecoder().decode(buffer)).trim();
     if (!text) throw new Error("That file is empty.");
@@ -455,8 +533,9 @@
     return text;
   };
 
-  const xmlToMxl = async (xmlBuffer, originalName) => {
-    const scoreText = normalizeMusicXml(xmlBuffer);
+  const xmlToMxl = async (xmlBuffer, originalName, title, composer) => {
+    let scoreText = normalizeMusicXml(xmlBuffer);
+    scoreText = ensureXmlMetadata(scoreText, title, composer);
     const archive = await buildMxlArchive(scoreText);
     if (archive.length > MAX_MXL_BYTES) {
       throw new Error(
@@ -470,7 +549,7 @@
     return { blob, filename, bytes: archive.length };
   };
 
-  const prepareScoreFile = async (file, ext, buffer) => {
+  const prepareScoreFile = async (file, ext, buffer, title, composer) => {
     if (ext === "mxl") {
       const bytes = new Uint8Array(buffer);
       if (bytes.length < 4 || bytes[0] !== 0x50 || bytes[1] !== 0x4b) {
@@ -492,7 +571,7 @@
     }
 
     setStatus("Converting XML to MXL…");
-    const converted = await xmlToMxl(buffer, file.name);
+    const converted = await xmlToMxl(buffer, file.name, title, composer);
 
     // Verify the archive can be read the same way Klavier reads MXL files.
     if (window.KlavierPlayer?.unzipXml) {
@@ -674,7 +753,13 @@
     try {
       setStatus(ext === "mxl" ? "Uploading…" : "Converting XML to MXL…");
       const buffer = await readFile(file);
-      const prepared = await prepareScoreFile(file, ext, buffer);
+      const prepared = await prepareScoreFile(
+        file,
+        ext,
+        buffer,
+        title,
+        composer
+      );
       const id = `shared-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const record = {
         id,
