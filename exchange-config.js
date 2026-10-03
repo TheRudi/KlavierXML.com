@@ -5,8 +5,8 @@
 // 2. Run exchange/supabase-setup.sql in the Supabase SQL editor
 // 3. Project Settings → API → copy Project URL and anon public key below
 //
-// Until these are set, the library still shows built-in scores; uploads stay disabled.
+// Note: the postgres:// connection string is NOT used here. Use the anon key.
 window.KlavierExchangeConfig = {
-  supabaseUrl: "",
+  supabaseUrl: "https://teesveninvkrouztkgjy.supabase.co",
   supabaseAnonKey: "",
 };
