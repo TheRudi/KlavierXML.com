@@ -1539,3 +1539,102 @@ button {
 .exchange-note a {
   color: var(--amber);
 }
+
+.score-viewer[hidden] {
+  display: none !important;
+}
+
+.score-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.score-viewer-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  background: rgba(6, 8, 12, 0.78);
+}
+
+.score-viewer-panel {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 52rem);
+  max-height: min(92vh, 56rem);
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 0.75rem;
+  padding: 1.1rem 1.15rem 1.25rem;
+  border: 1px solid rgba(224, 176, 122, 0.28);
+  border-radius: 1rem;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(224, 176, 122, 0.1), transparent 50%),
+    #141922;
+  overflow: hidden;
+}
+
+.score-viewer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.score-viewer-head h2 {
+  margin: 0.15rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.score-viewer-meta {
+  margin: 0.35rem 0 0;
+  color: var(--ivory-mute);
+  font-size: 0.95rem;
+}
+
+.score-viewer-status {
+  margin: 0;
+  color: var(--ivory-soft);
+  font-size: 0.95rem;
+}
+
+.score-viewer-status[data-kind="error"] {
+  color: #e7a3a3;
+}
+
+.score-viewer-page {
+  min-height: 12rem;
+  overflow: auto;
+  border-radius: 0.75rem;
+  background: #f7f4ee;
+  color: #111;
+}
+
+.score-viewer-page svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@media (max-width: 640px) {
+  .score-viewer {
+    padding: 0.5rem;
+    place-items: stretch;
+  }
+
+  .score-viewer-panel {
+    max-height: none;
+    height: 100%;
+    border-radius: 0.75rem;
+  }
+}
+

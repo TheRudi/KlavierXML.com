@@ -152,6 +152,38 @@
       </aside>
     </main>
 
+    <div
+      class="score-viewer"
+      id="score-viewer"
+      hidden
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="score-viewer-title"
+    >
+      <button
+        type="button"
+        class="score-viewer-backdrop"
+        id="score-viewer-close-backdrop"
+        aria-label="Close score viewer"
+      ></button>
+      <div class="score-viewer-panel">
+        <header class="score-viewer-head">
+          <div>
+            <p class="section-kicker">Preview</p>
+            <h2 id="score-viewer-title">Score</h2>
+            <p class="score-viewer-meta" id="score-viewer-meta"></p>
+          </div>
+          <button type="button" class="btn btn-ghost" id="score-viewer-close">
+            Close
+          </button>
+        </header>
+        <p class="score-viewer-status" id="score-viewer-status" role="status">
+          Loading score…
+        </p>
+        <div class="score-viewer-page" id="score-viewer-page" aria-live="polite"></div>
+      </div>
+    </div>
+
     <footer class="site-footer">
       <div class="footer-inner">
         <p class="footer-brand">KlavierXML</p>
@@ -171,9 +203,10 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=supabase9" defer></script>
-    <script src="exchange-config.js?v=supabase9" defer></script>
-    <script src="player.js?v=supabase9" defer></script>
-    <script src="exchange.js?v=supabase9" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@1.8.9/build/opensheetmusicdisplay.min.js"></script>
+    <script src="app.js?v=viewer1" defer></script>
+    <script src="exchange-config.js?v=viewer1" defer></script>
+    <script src="player.js?v=viewer1" defer></script>
+    <script src="exchange.js?v=viewer1" defer></script>
   </body>
 </html>

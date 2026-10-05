@@ -19,6 +19,13 @@
   const searchInput = document.getElementById("library-search");
   const countEl = document.getElementById("library-count");
   const adminPasswordInput = document.getElementById("admin-password");
+  const viewerEl = document.getElementById("score-viewer");
+  const viewerTitleEl = document.getElementById("score-viewer-title");
+  const viewerMetaEl = document.getElementById("score-viewer-meta");
+  const viewerStatusEl = document.getElementById("score-viewer-status");
+  const viewerPageEl = document.getElementById("score-viewer-page");
+  const viewerCloseBtn = document.getElementById("score-viewer-close");
+  const viewerCloseBackdrop = document.getElementById("score-viewer-close-backdrop");
 
   if (!listEl || !form) return;
 
@@ -27,6 +34,8 @@
   let localScores = [];
   let query = "";
   let supabaseClient = null;
+  let osmd = null;
+  let viewerRequestId = 0;
 
   const canShowRemove = () =>
     String(adminPasswordInput?.value || "") === REMOVE_PASSWORD;
@@ -586,6 +595,111 @@
     return { ...converted, converted: true };
   };
 
+  const setViewerStatus = (message, kind = "") => {
+    if (!viewerStatusEl) return;
+    viewerStatusEl.textContent = message || "";
+    viewerStatusEl.hidden = !message;
+    viewerStatusEl.dataset.kind = kind;
+  };
+
+  const closeScoreViewer = () => {
+    viewerRequestId += 1;
+    if (!viewerEl) return;
+    viewerEl.hidden = true;
+    document.body.style.overflow = "";
+    if (viewerPageEl) viewerPageEl.innerHTML = "";
+    osmd = null;
+    setViewerStatus("");
+  };
+
+  const getScoreBlob = async (item) => {
+    if (item.source === "local" && item.blob) return item.blob;
+    if (item.source === "shared") {
+      const cached = localScores.find((row) => row.id === item.id && row.blob);
+      if (cached?.blob) return cached.blob;
+      return fetchSharedBlob(item);
+    }
+    const res = await fetch(`exchange/${item.file}`);
+    if (!res.ok) throw new Error("Could not load that score.");
+    return res.blob();
+  };
+
+  const blobToMusicXml = async (blob) => {
+    const buffer = await blob.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    if (bytes.length >= 2 && bytes[0] === 0x50 && bytes[1] === 0x4b) {
+      if (!window.KlavierPlayer?.unzipXml) {
+        throw new Error("MXL preview is unavailable in this browser.");
+      }
+      return window.KlavierPlayer.unzipXml(buffer);
+    }
+    const text = new TextDecoder().decode(buffer).replace(/^\uFEFF/, "").trim();
+    if (!/<score-partwise\b|<score-timewise\b/i.test(text)) {
+      throw new Error("That file does not look like MusicXML.");
+    }
+    return text;
+  };
+
+  const getOsmd = () => {
+    if (osmd) return osmd;
+    const OSMD = window.opensheetmusicdisplay?.OpenSheetMusicDisplay;
+    if (!OSMD || !viewerPageEl) {
+      throw new Error("Score viewer failed to load. Refresh and try again.");
+    }
+    osmd = new OSMD(viewerPageEl, {
+      autoResize: true,
+      backend: "svg",
+      drawTitle: true,
+      drawSubtitle: false,
+      drawComposer: true,
+      drawLyricist: false,
+      drawCredits: false,
+      drawPartNames: false,
+      drawPartAbbreviations: false,
+      drawMeasureNumbers: true,
+      pageFormat: "A4_P",
+      drawUpToPageNumber: 1,
+      drawingParameters: "compacttight",
+    });
+    return osmd;
+  };
+
+  const openScoreViewer = async (item) => {
+    if (!viewerEl || !viewerPageEl) return;
+    const requestId = ++viewerRequestId;
+    viewerEl.hidden = false;
+    document.body.style.overflow = "hidden";
+    if (viewerTitleEl) viewerTitleEl.textContent = item.title || "Score";
+    if (viewerMetaEl) {
+      viewerMetaEl.textContent = [item.composer, "First page"]
+        .filter(Boolean)
+        .join(" · ");
+    }
+    viewerPageEl.innerHTML = "";
+    setViewerStatus("Loading score…");
+
+    try {
+      const blob = await getScoreBlob(item);
+      if (requestId !== viewerRequestId) return;
+      const xml = await blobToMusicXml(blob);
+      if (requestId !== viewerRequestId) return;
+      setViewerStatus("Rendering first page…");
+      const viewer = getOsmd();
+      await viewer.load(xml);
+      if (requestId !== viewerRequestId) return;
+      viewer.setOptions({
+        pageFormat: "A4_P",
+        drawUpToPageNumber: 1,
+      });
+      viewer.render();
+      setViewerStatus("Showing page 1");
+    } catch (err) {
+      if (requestId !== viewerRequestId) return;
+      viewerPageEl.innerHTML = "";
+      setViewerStatus(err.message || "Could not preview that score.", "error");
+    }
+  };
+
   const render = () => {
     const items = visibleItems();
     listEl.innerHTML = "";
@@ -626,6 +740,15 @@
 
       const actions = document.createElement("div");
       actions.className = "exchange-item-actions";
+
+      const viewBtn = document.createElement("button");
+      viewBtn.type = "button";
+      viewBtn.className = "btn btn-ghost";
+      viewBtn.textContent = "View";
+      viewBtn.addEventListener("click", () => {
+        openScoreViewer(item);
+      });
+      actions.append(viewBtn);
 
       const downloadBtn = document.createElement("button");
       downloadBtn.type = "button";
@@ -816,6 +939,14 @@
 
   adminPasswordInput?.addEventListener("input", () => {
     render();
+  });
+
+  viewerCloseBtn?.addEventListener("click", closeScoreViewer);
+  viewerCloseBackdrop?.addEventListener("click", closeScoreViewer);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && viewerEl && !viewerEl.hidden) {
+      closeScoreViewer();
+    }
   });
 
   (async () => {
