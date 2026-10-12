@@ -522,6 +522,33 @@ button {
   font-weight: 600;
 }
 
+.clip-points {
+  list-style: none;
+  margin: 0.55rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.clip-points li {
+  position: relative;
+  padding-left: 1rem;
+  color: var(--ivory-soft);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.clip-points li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+  background: var(--amber);
+}
+
 .clip-sound {
   align-self: flex-start;
   padding: 0.45rem 0.85rem;
