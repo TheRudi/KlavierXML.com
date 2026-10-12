@@ -493,8 +493,6 @@ button {
   width: 100%;
   max-width: 40rem;
   justify-self: center;
-  container-type: inline-size;
-  container-name: clip;
 }
 
 .clip-portrait {
@@ -512,11 +510,8 @@ button {
 }
 
 .clip-portrait video {
-  /* Match Drill video width: Pro height = clip inline size */
-  width: auto;
-  height: 100cqi;
-  max-width: 100%;
-  margin-inline: auto;
+  width: 100%;
+  height: auto;
   aspect-ratio: 3 / 4;
   object-fit: contain;
 }
