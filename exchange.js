@@ -40,6 +40,11 @@
   const canShowRemove = () =>
     String(adminPasswordInput?.value || "") === REMOVE_PASSWORD;
 
+  const getApiBase = () =>
+    String(window.KlavierExchangeConfig?.apiBase || "").trim().replace(/\/$/, "");
+
+  const usesPhpApi = () => Boolean(getApiBase());
+
   const getSupabaseConfig = () => {
     const url = String(window.KlavierExchangeConfig?.supabaseUrl || "").trim();
     const anonKey = String(
@@ -49,6 +54,7 @@
   };
 
   const getSupabase = () => {
+    if (usesPhpApi()) return null;
     if (supabaseClient) return supabaseClient;
     const { url, anonKey } = getSupabaseConfig();
     if (!url || !anonKey) return null;
@@ -59,14 +65,15 @@
     return supabaseClient;
   };
 
-  const requireSupabase = () => {
+  const requireSharedBackend = () => {
+    if (usesPhpApi()) return "php";
     const client = getSupabase();
     if (!client) {
       throw new Error(
-        "Supabase is not configured yet. Add supabaseUrl and supabaseAnonKey to exchange-config.js."
+        "Exchange backend is not configured. Set apiBase (PHP) or supabaseUrl/supabaseAnonKey in exchange-config.js."
       );
     }
-    return client;
+    return "supabase";
   };
 
   const storagePathFor = (id) => `files/${id}.mxl`;
@@ -86,7 +93,17 @@
   });
 
   const fetchSharedBlob = async (item) => {
-    const client = requireSupabase();
+    if (usesPhpApi()) {
+      const res = await fetch(
+        `${getApiBase()}/file.php?id=${encodeURIComponent(item.id)}`
+      );
+      if (!res.ok) {
+        throw new Error((await res.text()) || "Download failed");
+      }
+      return res.blob();
+    }
+    const client = getSupabase();
+    if (!client) throw new Error("Exchange backend is not configured.");
     const path = item.storage_path || item.file || storagePathFor(item.id);
     const { data, error } = await client.storage.from(STORAGE_BUCKET).download(path);
     if (error || !data) {
@@ -96,6 +113,17 @@
   };
 
   const fetchSharedCatalog = async () => {
+    if (usesPhpApi()) {
+      const res = await fetch(`${getApiBase()}/exchange.php`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Could not load the shared exchange library.");
+      }
+      const body = await res.json();
+      return {
+        scores: (Array.isArray(body.scores) ? body.scores : []).map(rowToScore),
+      };
+    }
     const client = getSupabase();
     if (!client) {
       return { scores: [] };
@@ -116,7 +144,7 @@
   };
 
   const publishSharedScore = async (entry, blob) => {
-    const client = requireSupabase();
+    requireSharedBackend();
     const catalog = await fetchSharedCatalog();
     if (catalog.scores.length >= MAX_FILES) {
       throw new Error(
@@ -129,6 +157,39 @@
     }
 
     const storagePath = storagePathFor(entry.id);
+
+    if (usesPhpApi()) {
+      const formData = new FormData();
+      formData.append("id", entry.id);
+      formData.append("title", entry.title);
+      formData.append("composer", entry.composer);
+      formData.append("credit", entry.credit || "");
+      formData.append("filename", entry.filename);
+      formData.append("added", entry.added || "");
+      formData.append("license", entry.license || "");
+      formData.append("file", blob, entry.filename || `${entry.id}.mxl`);
+      const res = await fetch(`${getApiBase()}/exchange.php`, {
+        method: "POST",
+        body: formData,
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body.error || "Could not publish the score.");
+      }
+      if (body.score) {
+        sharedScores = [rowToScore(body.score), ...catalog.scores].slice(0, MAX_FILES);
+      } else if (Array.isArray(body.scores)) {
+        sharedScores = body.scores.map(rowToScore);
+      } else {
+        sharedScores = [
+          rowToScore({ ...entry, format: "mxl", storage_path: storagePath }),
+          ...catalog.scores,
+        ].slice(0, MAX_FILES);
+      }
+      return true;
+    }
+
+    const client = getSupabase();
     const { error: uploadError } = await client.storage
       .from(STORAGE_BUCKET)
       .upload(storagePath, blob, {
@@ -162,7 +223,26 @@
   };
 
   const removeSharedScore = async (item) => {
-    const client = requireSupabase();
+    requireSharedBackend();
+    if (usesPhpApi()) {
+      const res = await fetch(
+        `${getApiBase()}/exchange.php?id=${encodeURIComponent(item.id)}`,
+        {
+          method: "DELETE",
+          headers: {
+            "X-Admin-Password": String(adminPasswordInput?.value || ""),
+          },
+        }
+      );
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body.error || "Could not remove that score.");
+      }
+      sharedScores = sharedScores.filter((score) => score.id !== item.id);
+      return;
+    }
+
+    const client = getSupabase();
     const path = item.storage_path || item.file || storagePathFor(item.id);
     const { error: dbError } = await client
       .from("exchange_scores")
@@ -982,9 +1062,9 @@
           }),
       ]);
       render();
-      if (!getSupabase()) {
+      if (!usesPhpApi() && !getSupabase()) {
         setStatus(
-          "Shared uploads need Supabase. Add supabaseUrl and supabaseAnonKey to exchange-config.js after running exchange/supabase-setup.sql."
+          "Shared uploads need a backend. Set apiBase (PHP + Postgres) or supabaseUrl/supabaseAnonKey in exchange-config.js."
         );
       }
     } catch (err) {
