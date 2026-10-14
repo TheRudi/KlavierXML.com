@@ -262,7 +262,7 @@ button {
 
 .hero-piano {
   display: block;
-  width: min(22rem, 72vw);
+  width: min(16.5rem, 58vw);
   max-width: 100%;
   height: auto;
   border-radius: 0.75rem;
