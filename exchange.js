@@ -431,6 +431,19 @@
     URL.revokeObjectURL(url);
   };
 
+  const playUrlFor = (item) => {
+    if (item.source === "shared") {
+      if (usesPhpApi()) {
+        return `${getApiBase()}/file.php?id=${encodeURIComponent(item.id)}`;
+      }
+      return "";
+    }
+    if (item.source === "builtin" && item.file) {
+      return `exchange/${item.file}`;
+    }
+    return "";
+  };
+
   const CRC_TABLE = (() => {
     const table = new Uint32Array(256);
     for (let i = 0; i < 256; i += 1) {
@@ -869,6 +882,17 @@
       const actions = document.createElement("div");
       actions.className = "exchange-item-actions";
 
+      const playUrl = playUrlFor(item);
+      if (playUrl) {
+        const playBtn = document.createElement("button");
+        playBtn.type = "button";
+        playBtn.className = "btn btn-primary";
+        playBtn.textContent = "Play";
+        playBtn.dataset.play = playUrl;
+        playBtn.setAttribute("aria-pressed", "false");
+        actions.append(playBtn);
+      }
+
       const viewBtn = document.createElement("button");
       viewBtn.type = "button";
       viewBtn.className = "btn btn-ghost";
@@ -880,7 +904,7 @@
 
       const downloadBtn = document.createElement("button");
       downloadBtn.type = "button";
-      downloadBtn.className = "btn btn-primary";
+      downloadBtn.className = "btn btn-ghost";
       downloadBtn.textContent = "Download";
       downloadBtn.addEventListener("click", async () => {
         try {
@@ -922,7 +946,12 @@
         actions.append(removeBtn);
       }
 
-      li.append(meta, actions);
+      const playStatus = document.createElement("p");
+      playStatus.className = "play-status";
+      playStatus.setAttribute("role", "status");
+      playStatus.hidden = true;
+
+      li.append(meta, actions, playStatus);
       listEl.append(li);
     });
   };
