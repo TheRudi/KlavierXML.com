@@ -1,6 +1,10 @@
 <?php
 declare(strict_types=1);
 
+// Binary download: never leak notices into the zip body.
+ini_set('display_errors', '0');
+error_reporting(E_ALL);
+
 $candidates = [
   getenv('KLAVIERXML_CONFIG') ?: '',
   '/Library/WebServer/KlavierXML-data/config.local.php',
@@ -92,7 +96,8 @@ try {
     'created_at',
     'zip_path',
   ];
-  fputcsv($csv, $headers);
+  // PHP 8.4+ requires an explicit $escape; keep CSV-compatible defaults.
+  fputcsv($csv, $headers, ',', '"', '\\');
 
   $storageDir = rtrim((string) $config['storage_dir'], '/');
   foreach ($rows as $row) {
@@ -122,7 +127,7 @@ try {
       $row['storage_path'] ?? '',
       $row['created_at'] ?? '',
       $zipRel,
-    ]);
+    ], ',', '"', '\\');
   }
 
   rewind($csv);
