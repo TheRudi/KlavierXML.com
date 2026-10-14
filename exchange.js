@@ -38,8 +38,9 @@
   let osmd = null;
   let viewerRequestId = 0;
 
-  const canShowRemove = () =>
-    String(adminPasswordInput?.value || "") === REMOVE_PASSWORD;
+  const adminPasswordValue = () => String(adminPasswordInput?.value || "");
+
+  const canShowRemove = () => adminPasswordValue() === REMOVE_PASSWORD;
 
   const syncAdminControls = () => {
     if (backupBtn) {
@@ -51,6 +52,14 @@
     String(window.KlavierExchangeConfig?.apiBase || "").trim().replace(/\/$/, "");
 
   const usesPhpApi = () => Boolean(getApiBase());
+
+  // Passwords may include non-Latin-1 chars; query params are UTF-8 safe.
+  // HTTP header values are not (Fetch rejects them).
+  const withAdminPassword = (url) => {
+    const u = new URL(url, window.location.href);
+    u.searchParams.set("password", adminPasswordValue());
+    return u.toString();
+  };
 
   const downloadExchangeBackup = async () => {
     if (!canShowRemove()) {
@@ -67,11 +76,7 @@
     try {
       setStatus("Preparing backup zip…");
       backupBtn.disabled = true;
-      const res = await fetch(`${getApiBase()}/backup.php`, {
-        headers: {
-          "X-Admin-Password": String(adminPasswordInput?.value || ""),
-        },
-      });
+      const res = await fetch(withAdminPassword(`${getApiBase()}/backup.php`));
       const type = res.headers.get("content-type") || "";
       if (!res.ok) {
         const body = type.includes("json")
@@ -271,13 +276,10 @@
     requireSharedBackend();
     if (usesPhpApi()) {
       const res = await fetch(
-        `${getApiBase()}/exchange.php?id=${encodeURIComponent(item.id)}`,
-        {
-          method: "DELETE",
-          headers: {
-            "X-Admin-Password": String(adminPasswordInput?.value || ""),
-          },
-        }
+        withAdminPassword(
+          `${getApiBase()}/exchange.php?id=${encodeURIComponent(item.id)}`
+        ),
+        { method: "DELETE" }
       );
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {

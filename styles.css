@@ -208,6 +208,10 @@ button {
   gap: 0.75rem;
 }
 
+.btn[hidden] {
+  display: none !important;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
