@@ -10,7 +10,7 @@
     />
     <link rel="canonical" href="https://klavierxml.com/exchange.html" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=play1" />
+    <link rel="stylesheet" href="styles.css?v=play2" />
   </head>
   <body class="page-exchange">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -183,10 +183,22 @@
             <h2 id="score-viewer-title">Score</h2>
             <p class="score-viewer-meta" id="score-viewer-meta"></p>
           </div>
-          <button type="button" class="btn btn-ghost" id="score-viewer-close">
-            Close
-          </button>
+          <div class="score-viewer-actions">
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="score-viewer-play"
+              hidden
+              aria-pressed="false"
+            >
+              Play
+            </button>
+            <button type="button" class="btn btn-ghost" id="score-viewer-close">
+              Close
+            </button>
+          </div>
         </header>
+        <p class="play-status" id="score-viewer-play-status" role="status" hidden></p>
         <p class="score-viewer-status" id="score-viewer-status" role="status">
           Loading score…
         </p>
@@ -215,9 +227,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@1.8.9/build/opensheetmusicdisplay.min.js"></script>
-    <script src="app.js?v=play1" defer></script>
-    <script src="exchange-config.js?v=play1" defer></script>
-    <script src="player.js?v=play1" defer></script>
-    <script src="exchange.js?v=play1" defer></script>
+    <script src="app.js?v=play2" defer></script>
+    <script src="exchange-config.js?v=play2" defer></script>
+    <script src="player.js?v=play2" defer></script>
+    <script src="exchange.js?v=play2" defer></script>
   </body>
 </html>

@@ -175,7 +175,7 @@
 
   async function play(button) {
     const url = button.dataset.play;
-    const card = button.closest(".score-card, .exchange-item");
+    const card = button.closest(".score-card, .exchange-item, .score-viewer");
     const status = card?.querySelector(".play-status");
     if (!url || !status) return;
     if (button.getAttribute("aria-pressed") === "true" || current?.button === button) {
@@ -271,5 +271,5 @@
     play(button);
   });
 
-  window.KlavierPlayer = { parseMusicXml, unzipXml };
+  window.KlavierPlayer = { parseMusicXml, unzipXml, stop };
 })();

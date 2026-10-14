@@ -25,6 +25,8 @@
   const viewerMetaEl = document.getElementById("score-viewer-meta");
   const viewerStatusEl = document.getElementById("score-viewer-status");
   const viewerPageEl = document.getElementById("score-viewer-page");
+  const viewerPlayBtn = document.getElementById("score-viewer-play");
+  const viewerPlayStatusEl = document.getElementById("score-viewer-play-status");
   const viewerCloseBtn = document.getElementById("score-viewer-close");
   const viewerCloseBackdrop = document.getElementById("score-viewer-close-backdrop");
 
@@ -742,8 +744,24 @@
     viewerStatusEl.dataset.kind = kind;
   };
 
+  const resetViewerPlay = () => {
+    window.KlavierPlayer?.stop?.();
+    if (viewerPlayBtn) {
+      viewerPlayBtn.disabled = false;
+      viewerPlayBtn.textContent = "Play";
+      viewerPlayBtn.setAttribute("aria-pressed", "false");
+      viewerPlayBtn.hidden = true;
+      delete viewerPlayBtn.dataset.play;
+    }
+    if (viewerPlayStatusEl) {
+      viewerPlayStatusEl.hidden = true;
+      viewerPlayStatusEl.textContent = "";
+    }
+  };
+
   const closeScoreViewer = () => {
     viewerRequestId += 1;
+    resetViewerPlay();
     if (!viewerEl) return;
     viewerEl.hidden = true;
     document.body.style.overflow = "";
@@ -807,6 +825,7 @@
   const openScoreViewer = async (item) => {
     if (!viewerEl || !viewerPageEl) return;
     const requestId = ++viewerRequestId;
+    window.KlavierPlayer?.stop?.();
     viewerEl.hidden = false;
     document.body.style.overflow = "hidden";
     if (viewerTitleEl) viewerTitleEl.textContent = item.title || "Score";
@@ -814,6 +833,23 @@
       viewerMetaEl.textContent = [item.composer, "First page"]
         .filter(Boolean)
         .join(" · ");
+    }
+    const playUrl = playUrlFor(item);
+    if (viewerPlayBtn) {
+      viewerPlayBtn.disabled = false;
+      viewerPlayBtn.textContent = "Play";
+      viewerPlayBtn.setAttribute("aria-pressed", "false");
+      if (playUrl) {
+        viewerPlayBtn.dataset.play = playUrl;
+        viewerPlayBtn.hidden = false;
+      } else {
+        delete viewerPlayBtn.dataset.play;
+        viewerPlayBtn.hidden = true;
+      }
+    }
+    if (viewerPlayStatusEl) {
+      viewerPlayStatusEl.hidden = true;
+      viewerPlayStatusEl.textContent = "";
     }
     viewerPageEl.innerHTML = "";
     setViewerStatus("Loading score…");
