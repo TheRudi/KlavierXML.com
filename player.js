@@ -175,14 +175,16 @@
 
   async function play(button) {
     const url = button.dataset.play;
-    const card = button.closest(".score-card");
-    const status = card.querySelector(".play-status");
+    const card = button.closest(".score-card, .exchange-item, .score-viewer");
+    const status = card?.querySelector(".play-status");
+    if (!url || !status) return;
     if (button.getAttribute("aria-pressed") === "true" || current?.button === button) {
       stop();
       return;
     }
     stop();
     const id = requestId;
+    status.hidden = false;
     status.textContent = "Loading piano…";
     button.disabled = true;
     try {
@@ -251,6 +253,7 @@
     } catch (error) {
       button.disabled = false;
       button.textContent = "Play";
+      status.hidden = false;
       status.textContent = error.message || "Playback failed.";
       if (current?.button === button) current = null;
     }
@@ -268,5 +271,5 @@
     play(button);
   });
 
-  window.KlavierPlayer = { parseMusicXml, unzipXml };
+  window.KlavierPlayer = { parseMusicXml, unzipXml, stop };
 })();
