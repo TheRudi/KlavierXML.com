@@ -19,6 +19,7 @@
   const searchInput = document.getElementById("library-search");
   const countEl = document.getElementById("library-count");
   const adminPasswordInput = document.getElementById("admin-password");
+  const backupBtn = document.getElementById("exchange-backup");
   const viewerEl = document.getElementById("score-viewer");
   const viewerTitleEl = document.getElementById("score-viewer-title");
   const viewerMetaEl = document.getElementById("score-viewer-meta");
@@ -37,13 +38,62 @@
   let osmd = null;
   let viewerRequestId = 0;
 
-  const canShowRemove = () =>
-    String(adminPasswordInput?.value || "") === REMOVE_PASSWORD;
+  const adminPasswordValue = () => String(adminPasswordInput?.value || "");
+
+  const canShowRemove = () => adminPasswordValue() === REMOVE_PASSWORD;
+
+  const syncAdminControls = () => {
+    if (backupBtn) {
+      backupBtn.hidden = !canShowRemove();
+    }
+  };
 
   const getApiBase = () =>
     String(window.KlavierExchangeConfig?.apiBase || "").trim().replace(/\/$/, "");
 
   const usesPhpApi = () => Boolean(getApiBase());
+
+  // Passwords may include non-Latin-1 chars; query params are UTF-8 safe.
+  // HTTP header values are not (Fetch rejects them).
+  const withAdminPassword = (url) => {
+    const u = new URL(url, window.location.href);
+    u.searchParams.set("password", adminPasswordValue());
+    return u.toString();
+  };
+
+  const downloadExchangeBackup = async () => {
+    if (!canShowRemove()) {
+      setStatus("Enter the admin password to download a backup.", "error");
+      return;
+    }
+    if (!usesPhpApi()) {
+      setStatus(
+        "Backup is available on the self-hosted PHP + Postgres exchange.",
+        "error"
+      );
+      return;
+    }
+    try {
+      setStatus("Preparing backup zip…");
+      backupBtn.disabled = true;
+      const res = await fetch(withAdminPassword(`${getApiBase()}/backup.php`));
+      const type = res.headers.get("content-type") || "";
+      if (!res.ok) {
+        const body = type.includes("json")
+          ? await res.json().catch(() => ({}))
+          : {};
+        throw new Error(body.error || "Could not create the backup.");
+      }
+      const blob = await res.blob();
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+      downloadBlob(blob, `klavierxml-exchange-backup-${stamp}.zip`);
+      setStatus("Backup downloaded (scores.csv + all .mxl files).");
+    } catch (err) {
+      setStatus(err.message || "Could not download the backup.", "error");
+    } finally {
+      backupBtn.disabled = false;
+    }
+  };
 
   const getSupabaseConfig = () => {
     const url = String(window.KlavierExchangeConfig?.supabaseUrl || "").trim();
@@ -226,13 +276,10 @@
     requireSharedBackend();
     if (usesPhpApi()) {
       const res = await fetch(
-        `${getApiBase()}/exchange.php?id=${encodeURIComponent(item.id)}`,
-        {
-          method: "DELETE",
-          headers: {
-            "X-Admin-Password": String(adminPasswordInput?.value || ""),
-          },
-        }
+        withAdminPassword(
+          `${getApiBase()}/exchange.php?id=${encodeURIComponent(item.id)}`
+        ),
+        { method: "DELETE" }
       );
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -785,6 +832,7 @@
     listEl.innerHTML = "";
     emptyEl.hidden = items.length > 0;
     updateCount();
+    syncAdminControls();
 
     items.forEach((item) => {
       const li = document.createElement("li");
@@ -1018,7 +1066,12 @@
   });
 
   adminPasswordInput?.addEventListener("input", () => {
+    syncAdminControls();
     render();
+  });
+
+  backupBtn?.addEventListener("click", () => {
+    downloadExchangeBackup();
   });
 
   viewerCloseBtn?.addEventListener("click", closeScoreViewer);
