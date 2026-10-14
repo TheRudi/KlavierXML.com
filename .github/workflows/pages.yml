@@ -1,0 +1,9 @@
+# GitHub Pages deploys disabled — site is self-hosted on klavierxml.com.
+name: Deploy GitHub Pages
+on:
+  workflow_dispatch:
+jobs:
+  noop:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Pages deploy disabled; site is self-hosted."
