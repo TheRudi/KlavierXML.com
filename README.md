@@ -1,29 +1,8 @@
-# KlavierXML.com
+# KlavierXML.com (archived on GitHub)
 
-Learn piano from real sheet music with MusicXML.
+This repository is archived for historical reference.
 
-## Site
+**Live site:** https://klavierxml.com/  
+**Hosting:** self-hosted Apache + PHP + PostgreSQL  
 
-This repository hosts the marketing site for [KlavierXML](https://klavierxml.com).
-
-- Static HTML/CSS/JS
-- Deployed with GitHub Pages
-- Custom domain: `klavierxml.com`
-
-## Local preview
-
-```bash
-python3 -m http.server 8080
-```
-
-Open http://localhost:8080
-
-## GitHub Pages
-
-Enable Pages for this repository:
-
-1. Settings → Pages
-2. Source: Deploy from a branch
-3. Branch: `main` / root (or merge this PR first)
-
-The included `CNAME` file points the site at `klavierxml.com`.
+GitHub Pages and Supabase are no longer used for the production site.
