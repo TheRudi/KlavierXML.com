@@ -253,85 +253,20 @@ button {
   z-index: 1;
   display: flex;
   justify-content: center;
-  width: min(1120px, 100%);
-  margin: 0 auto;
-}
-
-.piano {
   width: 100%;
-  filter: drop-shadow(0 18px 30px var(--shadow));
+  margin: 0 auto;
+  opacity: 0;
+  transform: translateY(1rem);
+  animation: rise 1s var(--ease-out) 0.35s forwards;
 }
 
-.piano-body {
-  position: relative;
-  padding: 1.1rem 1.1rem 0.85rem;
-  border-radius: 0.65rem 0.65rem 0.2rem 0.2rem;
-  background:
-    linear-gradient(180deg, #6a5340 0%, #3d2e22 28%, #241910 100%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 0 0 1px rgba(0, 0, 0, 0.4);
-}
-
-.fallboard {
-  height: 0.55rem;
-  margin-bottom: 0.75rem;
-  border-radius: 0.2rem;
-  background: linear-gradient(90deg, #1a1f28, #3a3228 40%, #1a1f28);
-}
-
-.keys {
-  position: relative;
-  display: flex;
-  height: clamp(11rem, 28vw, 16rem);
-  user-select: none;
-}
-
-.white-key {
-  position: relative;
-  flex: 1 1 0;
-  margin: 0 1px;
-  border-radius: 0 0 0.28rem 0.28rem;
-  background:
-    linear-gradient(180deg, #fffdf8 0%, var(--key-white) 70%, #e8e2d6 100%);
-  box-shadow:
-    inset 0 -2px 0 rgba(0, 0, 0, 0.08),
-    0 4px 8px rgba(0, 0, 0, 0.25);
-  transform-origin: top center;
-  transition: transform 0.08s ease-out, background 0.08s ease-out;
-}
-
-.white-key.lit {
-  background: linear-gradient(180deg, #fff8eb 0%, #f0d4a8 100%);
-  transform: translateY(3px);
-}
-
-.black-keys {
-  position: absolute;
-  inset: 0 0 auto;
-  height: 58%;
-  pointer-events: none;
-}
-
-.black-key {
-  position: absolute;
-  top: 0;
-  width: calc(100% / 52 * 0.62);
-  height: 100%;
-  border-radius: 0 0 0.18rem 0.18rem;
-  background:
-    linear-gradient(180deg, #3a3a3a 0%, var(--key-black) 40%, #0a0a0a 100%);
-  box-shadow:
-    inset 0 -2px 0 rgba(255, 255, 255, 0.08),
-    0 6px 10px rgba(0, 0, 0, 0.45);
-  transform-origin: top center;
-  transition: transform 0.08s ease-out, background 0.08s ease-out;
-}
-
-.black-key.lit {
-  background: linear-gradient(180deg, #5a4630 0%, #2a1c0e 100%);
-  transform: translateY(2px);
+.hero-piano {
+  display: block;
+  width: min(22rem, 72vw);
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
 }
 
 .section {

@@ -17,7 +17,7 @@
     <meta property="og:url" content="https://klavierxml.com" />
     <link rel="canonical" href="https://klavierxml.com/" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=piano1" />
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -52,13 +52,14 @@
           </div>
         </div>
 
-        <div class="piano-stage" aria-hidden="true">
-          <div class="piano">
-            <div class="piano-body">
-              <div class="fallboard"></div>
-              <div class="keys" id="piano-keys"></div>
-            </div>
-          </div>
+        <div class="piano-stage">
+          <img
+            class="hero-piano"
+            src="images/hero-piano.jpg"
+            width="1400"
+            height="1320"
+            alt="Bösendorfer grand piano"
+          />
         </div>
       </section>
 
@@ -450,7 +451,7 @@
       </div>
     </footer>
 
-    <script src="app.js" defer></script>
-    <script src="player.js" defer></script>
+    <script src="app.js?v=piano1" defer></script>
+    <script src="player.js?v=piano1" defer></script>
   </body>
 </html>
