@@ -98,6 +98,123 @@ function storage_path_for(string $id): string
   return 'files/' . $id . '.mxl';
 }
 
+function file_extension(string $name): string
+{
+  $base = strtolower(basename($name));
+  $pos = strrpos($base, '.');
+  if ($pos === false) {
+    return '';
+  }
+  return substr($base, $pos + 1);
+}
+
+function looks_like_musicxml(string $text): bool
+{
+  return (bool) preg_match('/<(?:score-partwise|score-timewise)\b/i', $text)
+    || (bool) preg_match('/<!DOCTYPE\s+score-(?:partwise|timewise)\b/i', $text);
+}
+
+/**
+ * Uploads are always stored as .mxl. Reject anything that is not a ZIP
+ * archive containing MusicXML (score-partwise / score-timewise).
+ *
+ * @return string|null Error message, or null when the file is acceptable.
+ */
+function validate_uploaded_mxl(string $tmpPath, string $declaredName): ?string
+{
+  $ext = file_extension($declaredName);
+  // Client converts .xml/.musicxml to .mxl before POST; accept only .mxl here.
+  if ($ext !== '' && $ext !== 'mxl') {
+    return 'Only compressed MusicXML (.mxl) uploads are accepted by the exchange API.';
+  }
+
+  $handle = @fopen($tmpPath, 'rb');
+  if ($handle === false) {
+    return 'Could not read the uploaded score file.';
+  }
+  $magic = fread($handle, 4);
+  fclose($handle);
+  if ($magic === false || strlen($magic) < 2 || $magic[0] !== 'P' || $magic[1] !== 'K') {
+    return 'That file is not a valid compressed MusicXML (.mxl) archive.';
+  }
+
+  if (!class_exists('ZipArchive')) {
+    return 'Zip support is not available on this server; cannot verify MusicXML uploads.';
+  }
+
+  $zip = new ZipArchive();
+  $openFlags = defined('ZipArchive::RDONLY') ? ZipArchive::RDONLY : 0;
+  $opened = $zip->open($tmpPath, $openFlags);
+  if ($opened !== true && $openFlags !== 0) {
+    $opened = $zip->open($tmpPath);
+  }
+  if ($opened !== true) {
+    return 'That file is not a valid compressed MusicXML (.mxl) archive.';
+  }
+
+  $candidates = [];
+  $container = $zip->getFromName('META-INF/container.xml');
+  if ($container === false) {
+    // Some exporters use a different path casing.
+    for ($i = 0; $i < $zip->numFiles; $i += 1) {
+      $stat = $zip->statIndex($i);
+      $name = (string) ($stat['name'] ?? '');
+      if (strcasecmp($name, 'META-INF/container.xml') === 0) {
+        $container = $zip->getFromIndex($i);
+        break;
+      }
+    }
+  }
+  if (is_string($container) && $container !== '') {
+    if (preg_match_all('/full-path\s*=\s*"([^"]+)"/i', $container, $matches)) {
+      foreach ($matches[1] as $path) {
+        $candidates[] = $path;
+      }
+    }
+  }
+
+  for ($i = 0; $i < $zip->numFiles; $i += 1) {
+    $stat = $zip->statIndex($i);
+    $name = (string) ($stat['name'] ?? '');
+    if ($name === '' || str_ends_with($name, '/')) {
+      continue;
+    }
+    $lower = strtolower($name);
+    if (str_contains($lower, 'meta-inf/container.xml')) {
+      continue;
+    }
+    if (str_ends_with($lower, '.xml') || str_ends_with($lower, '.musicxml')) {
+      $candidates[] = $name;
+    }
+  }
+
+  $candidates = array_values(array_unique($candidates));
+  foreach ($candidates as $path) {
+    $xml = $zip->getFromName($path);
+    if ($xml === false) {
+      // Retry case-insensitive match.
+      for ($i = 0; $i < $zip->numFiles; $i += 1) {
+        $stat = $zip->statIndex($i);
+        $name = (string) ($stat['name'] ?? '');
+        if (strcasecmp($name, $path) === 0) {
+          $xml = $zip->getFromIndex($i);
+          break;
+        }
+      }
+    }
+    if (!is_string($xml) || $xml === '') {
+      continue;
+    }
+    if (looks_like_musicxml($xml)) {
+      $zip->close();
+      return null;
+    }
+  }
+
+  $zip->close();
+  return 'That archive does not contain a MusicXML score. Only MusicXML (.musicxml / .xml) or .mxl files are accepted.';
+}
+
 function handle_list(PDO $pdo, array $config): void
 {
   $limit = (int) ($config['max_files'] ?? 100);
@@ -173,6 +290,25 @@ function handle_upload(PDO $pdo, array $config): void
   if ($size <= 0 || $size > $maxBytes) {
     http_response_code(400);
     echo json_encode(['error' => 'Score file is too large for the exchange.']);
+    return;
+  }
+
+  // Decline incompatible payloads before anything is stored or indexed.
+  $declaredName = trim((string) ($_FILES['file']['name'] ?? ''));
+  if ($declaredName === '') {
+    $declaredName = $filename;
+  }
+  if (file_extension($filename) !== 'mxl') {
+    http_response_code(400);
+    echo json_encode([
+      'error' => 'Only compressed MusicXML (.mxl) uploads are accepted. Convert .xml / .musicxml on the client first.',
+    ]);
+    return;
+  }
+  $validationError = validate_uploaded_mxl($_FILES['file']['tmp_name'], $declaredName);
+  if ($validationError !== null) {
+    http_response_code(400);
+    echo json_encode(['error' => $validationError]);
     return;
   }
 

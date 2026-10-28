@@ -656,32 +656,59 @@
     return serialized;
   };
 
+  const isMusicXmlScoreText = (text) =>
+    /<score-partwise\b/i.test(text) ||
+    /<score-timewise\b/i.test(text) ||
+    /<!DOCTYPE\s+score-partwise\b/i.test(text) ||
+    /<!DOCTYPE\s+score-timewise\b/i.test(text);
+
   const normalizeMusicXml = (buffer) => {
     let text = stripBom(new TextDecoder().decode(buffer)).trim();
     if (!text) throw new Error("That file is empty.");
 
     // If the upload was already an MXL/ZIP, refuse here; caller handles .mxl.
     if (text.startsWith("PK")) {
-      throw new Error("This looks like an MXL file. Upload it with a .mxl name.");
+      throw new Error(
+        "This looks like a compressed MusicXML (.mxl) file. Rename it to .mxl and try again."
+      );
     }
 
     // Accept common MusicXML roots, with or without namespaces/DOCTYPE.
-    const hasScore =
-      /<score-partwise\b/i.test(text) ||
-      /<score-timewise\b/i.test(text) ||
-      /<!DOCTYPE\s+score-partwise\b/i.test(text) ||
-      /<!DOCTYPE\s+score-timewise\b/i.test(text);
-
-    if (!hasScore) {
+    if (!isMusicXmlScoreText(text)) {
       // Some exporters wrap the score; still try if it is XML-ish.
       if (!/^<\?xml\b/i.test(text) && !/^</.test(text)) {
-        throw new Error("That file does not look like MusicXML.");
+        throw new Error(
+          "That file is not MusicXML. Upload a .musicxml, .xml (MusicXML), or .mxl score."
+        );
       }
       throw new Error(
-        "That XML file does not contain a MusicXML score (score-partwise or score-timewise)."
+        "That XML file is not MusicXML (missing score-partwise or score-timewise). Only MusicXML scores are accepted."
       );
     }
     return text;
+  };
+
+  const assertMxlContainsMusicXml = async (buffer) => {
+    if (!window.KlavierPlayer?.unzipXml) {
+      throw new Error(
+        "This browser cannot verify compressed MusicXML (.mxl) uploads."
+      );
+    }
+    let xml;
+    try {
+      xml = await window.KlavierPlayer.unzipXml(buffer);
+    } catch (err) {
+      throw new Error(
+        err?.message ||
+          "That .mxl file is not a valid compressed MusicXML archive."
+      );
+    }
+    if (!isMusicXmlScoreText(xml)) {
+      throw new Error(
+        "That .mxl archive does not contain a MusicXML score. Only MusicXML/.mxl files are accepted."
+      );
+    }
+    return xml;
   };
 
   const xmlToMxl = async (xmlBuffer, originalName, title, composer) => {
@@ -704,11 +731,15 @@
     if (ext === "mxl") {
       const bytes = new Uint8Array(buffer);
       if (bytes.length < 4 || bytes[0] !== 0x50 || bytes[1] !== 0x4b) {
-        throw new Error("That .mxl file is not a valid MusicXML archive.");
+        throw new Error(
+          "That .mxl file is not a valid compressed MusicXML archive (expected a ZIP containing MusicXML)."
+        );
       }
       if (bytes.length > MAX_MXL_BYTES) {
         throw new Error("That MXL file is larger than 100 KB.");
       }
+      // Sniff inside the archive so arbitrary ZIPs renamed to .mxl are declined.
+      await assertMxlContainsMusicXml(buffer);
       return {
         blob: new Blob([buffer], {
           type: file.type || "application/vnd.recordare.musicxml",
@@ -725,14 +756,7 @@
     const converted = await xmlToMxl(buffer, file.name, title, composer);
 
     // Verify the archive can be read the same way Klavier reads MXL files.
-    if (window.KlavierPlayer?.unzipXml) {
-      const xml = await window.KlavierPlayer.unzipXml(
-        await converted.blob.arrayBuffer()
-      );
-      if (!/score-partwise|score-timewise/i.test(xml)) {
-        throw new Error("Converted MXL could not be verified.");
-      }
-    }
+    await assertMxlContainsMusicXml(await converted.blob.arrayBuffer());
 
     return { ...converted, converted: true };
   };
@@ -1015,7 +1039,22 @@
   fileInput?.addEventListener("change", () => {
     const file = fileInput.files?.[0];
     fileNameEl.textContent = file ? file.name : "No file chosen";
-    if (file && !titleInput.value) titleInput.value = titleFromFile(file.name);
+    if (!file) {
+      setStatus("");
+      return;
+    }
+    const ext = extensionOf(file.name);
+    if (!ALLOWED.has(ext)) {
+      setStatus(
+        "Only MusicXML (.musicxml / .xml) or compressed MusicXML (.mxl) files are accepted.",
+        "error"
+      );
+      fileInput.value = "";
+      fileNameEl.textContent = "No file chosen";
+      return;
+    }
+    setStatus("");
+    if (!titleInput.value) titleInput.value = titleFromFile(file.name);
   });
 
   form.addEventListener("reset", () => {
@@ -1034,7 +1073,10 @@
 
     const ext = extensionOf(file.name);
     if (!ALLOWED.has(ext)) {
-      setStatus("Only .xml, .musicxml, and .mxl files are accepted.", "error");
+      setStatus(
+        "Only MusicXML (.musicxml / .xml) or compressed MusicXML (.mxl) files are accepted.",
+        "error"
+      );
       return;
     }
     if (ext === "mxl" && file.size > MAX_MXL_BYTES) {
