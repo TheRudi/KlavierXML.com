@@ -1,0 +1,27 @@
+{
+  "updated": "2026-10-02",
+  "scores": [
+    {
+      "id": "beethoven-ode-to-joy",
+      "title": "Ode to Joy",
+      "composer": "Ludwig van Beethoven",
+      "credit": "Arranged for piano by Torby Brand",
+      "file": "files/Beethoven-Ode_to_Joy.mxl",
+      "format": "mxl",
+      "bytes": 3209,
+      "license": "Public-domain melody. Confirm arrangement terms before republishing.",
+      "added": "2026-10-02"
+    },
+    {
+      "id": "hill-happy-birthday",
+      "title": "Happy Birthday",
+      "composer": "Mildred J. Hill and Patty Smith Hill",
+      "credit": "Easy to play · public-domain melody",
+      "file": "files/Hill-Happy_Birthday.mxl",
+      "format": "mxl",
+      "bytes": 2824,
+      "license": "Public-domain melody. Confirm arrangement terms before republishing.",
+      "added": "2026-10-02"
+    }
+  ]
+}

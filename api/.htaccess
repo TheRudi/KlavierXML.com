@@ -1,0 +1,6 @@
+# Deny local config and force PHP for the exchange API
+<FilesMatch "\.local\.php$">
+  Require all denied
+</FilesMatch>
+
+DirectoryIndex exchange.php
