@@ -32,8 +32,8 @@
         <p class="section-kicker">Option 05</p>
         <h1 class="legal-title">PDF2XML on KlavierXML.com</h1>
         <p class="legal-lede">
-          Upload a score PDF. KlavierXML converts it to MusicXML so you can open
-          it in the Klavier app or share it on the
+          Upload a score PDF. KlavierXML converts it to MusicXML with Audiveris
+          so you can open it in the Klavier app or share it on the
           <a href="exchange.html">MusicXML exchange</a>.
         </p>
       </header>
@@ -45,7 +45,8 @@
           <p>
             Use a scanned score PDF, or a PDF you built from JPG pages (see
             <a href="index.html#get-songs">How to get songs</a>, option 04).
-            Please only upload music you have the right to convert.
+            Conversion can take one to a few minutes. Please only upload music
+            you have the right to convert.
           </p>
         </div>
 
@@ -60,7 +61,8 @@
               required
             />
             <span class="file-picker-hint"
-              >Browse for a .pdf score · multi-page scans welcome</span
+              >Browse for a .pdf score · multi-page scans welcome · max
+              40&nbsp;MB</span
             >
             <span class="file-picker-name" id="pdf-file-name">No file chosen</span>
           </label>
@@ -94,8 +96,8 @@
             Convert to MusicXML
           </button>
           <p class="file-picker-hint" id="pdf2xml-status" role="status">
-            Conversion runs on klavierxml.com. You will get a downloadable
-            <code>.xml</code> when it finishes.
+            Ready. After conversion your browser will download a
+            <code>.xml</code> file.
           </p>
         </form>
       </section>
@@ -153,23 +155,73 @@
       const fileName = document.getElementById("pdf-file-name");
       const form = document.getElementById("pdf2xml-form");
       const status = document.getElementById("pdf2xml-status");
+      const submitBtn = document.getElementById("pdf2xml-submit");
 
       fileInput.addEventListener("change", () => {
         const file = fileInput.files && fileInput.files[0];
         fileName.textContent = file ? file.name : "No file chosen";
       });
 
-      form.addEventListener("submit", (event) => {
+      form.addEventListener("submit", async (event) => {
         event.preventDefault();
         const file = fileInput.files && fileInput.files[0];
         if (!file) {
           status.textContent = "Choose a PDF first.";
           return;
         }
+
+        const body = new FormData();
+        body.append("pdf", file, file.name);
+        const title = document.getElementById("pdf-title").value.trim();
+        const composer = document.getElementById("pdf-composer").value.trim();
+        if (title) body.append("title", title);
+        if (composer) body.append("composer", composer);
+
+        submitBtn.disabled = true;
         status.textContent =
-          "PDF2XML is listed on KlavierXML.com. Server-side conversion is next — your file “" +
-          file.name +
-          "” is ready to send once the converter endpoint is live.";
+          "Converting with Audiveris… this can take one to a few minutes. Keep this tab open.";
+
+        try {
+          const response = await fetch("api/convert.php", {
+            method: "POST",
+            body,
+          });
+
+          const contentType = response.headers.get("content-type") || "";
+          if (!response.ok) {
+            let message = "Conversion failed (" + response.status + ").";
+            if (contentType.includes("application/json")) {
+              const data = await response.json();
+              if (data && data.error) message = data.error;
+            } else {
+              message = (await response.text()) || message;
+            }
+            throw new Error(message);
+          }
+
+          const blob = await response.blob();
+          let downloadName = file.name.replace(/\.pdf$/i, "") + ".xml";
+          const disposition = response.headers.get("content-disposition") || "";
+          const match = /filename=\"([^\"]+)\"/i.exec(disposition);
+          if (match) downloadName = match[1];
+
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = downloadName;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+
+          status.textContent =
+            "Done. Downloaded " + downloadName + ". Open it in Klavier or share it on the exchange.";
+        } catch (err) {
+          status.textContent =
+            err && err.message ? err.message : "Conversion failed.";
+        } finally {
+          submitBtn.disabled = false;
+        }
       });
     </script>
   </body>
