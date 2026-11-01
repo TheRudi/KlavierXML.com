@@ -1218,8 +1218,29 @@
     });
 
   const applyGuessedMetadata = (title, composer) => {
-    if (title) titleInput.value = String(title).slice(0, 120);
-    if (composer) composerInput.value = String(composer).slice(0, 160);
+    const guessedTitle = String(title || "").trim();
+    const guessedComposer = String(composer || "").trim();
+    if (guessedTitle) titleInput.value = guessedTitle.slice(0, 120);
+    if (guessedComposer) composerInput.value = guessedComposer.slice(0, 160);
+
+    // Mirror into library search so similar existing scores are visible.
+    refreshComposerList();
+    if (searchInput) {
+      searchInput.value = guessedTitle;
+      titleQuery = foldText(guessedTitle);
+    }
+    if (composerSelect) {
+      const folded = foldText(guessedComposer);
+      const match = folded
+        ? [...composerSelect.options].find(
+            (opt) => opt.value && foldText(opt.value) === folded
+          )
+        : null;
+      composerSelect.value = match ? match.value : "";
+      composerFilter = composerSelect.value;
+    }
+    listOffset = 0;
+    render();
   };
 
   fileInput?.addEventListener("change", async () => {
