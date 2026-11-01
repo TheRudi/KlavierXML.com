@@ -396,11 +396,32 @@
     return parts.length > 1 ? parts.pop() : "";
   };
 
-  const titleFromFile = (name) =>
-    String(name || "")
+  const humanizeFilePart = (value) =>
+    String(value || "")
+      .replace(/_+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  /** Guess from Composer-Title.xml / Composer-Full_Title.mxl (optional trailing -© / -⎕). */
+  const metaFromFilename = (name) => {
+    let stem = String(name || "")
       .replace(/\.(xml|musicxml|mxl)$/i, "")
-      .replace(/[_-]+/g, " ")
-      .trim() || "Untitled score";
+      .trim();
+    stem = stem.replace(/-(?:©|⎕|\[c\]|\(c\))$/iu, "");
+    const dash = stem.indexOf("-");
+    if (dash <= 0 || dash >= stem.length - 1) {
+      return {
+        title: humanizeFilePart(stem) || "Untitled score",
+        composer: "",
+      };
+    }
+    return {
+      composer: humanizeFilePart(stem.slice(0, dash)),
+      title: humanizeFilePart(stem.slice(dash + 1)) || "Untitled score",
+    };
+  };
+
+  const titleFromFile = (name) => metaFromFilename(name).title;
 
   const stemFromFile = (name) =>
     String(name || "")
@@ -1143,28 +1164,34 @@
       reader.readAsArrayBuffer(file);
     });
 
+  const applyGuessedMetadata = (title, composer) => {
+    if (title) titleInput.value = String(title).slice(0, 120);
+    if (composer) composerInput.value = String(composer).slice(0, 160);
+  };
+
   fileInput?.addEventListener("change", async () => {
     const file = fileInput.files?.[0];
     fileNameEl.textContent = file ? file.name : "No file chosen";
     if (!file) return;
 
+    const fromName = metaFromFilename(file.name);
     const ext = extensionOf(file.name);
     if (!ALLOWED.has(ext)) {
-      if (!titleInput.value.trim()) titleInput.value = titleFromFile(file.name);
+      applyGuessedMetadata(fromName.title, fromName.composer);
       return;
     }
 
-    // Prefer MusicXML metadata; fall back to the file name for title only.
+    // 1) MusicXML work-title / creator  2) Composer-Title filename
     try {
       const buffer = await readFile(file);
       const xmlText = await xmlTextFromUpload(file, buffer);
-      const meta = extractScoreMetadata(xmlText);
-      if (meta.title) titleInput.value = meta.title.slice(0, 120);
-      else if (!titleInput.value.trim()) titleInput.value = titleFromFile(file.name);
-
-      if (meta.composer) composerInput.value = meta.composer.slice(0, 160);
+      const fromXml = extractScoreMetadata(xmlText);
+      applyGuessedMetadata(
+        fromXml.title || fromName.title,
+        fromXml.composer || fromName.composer
+      );
     } catch (_) {
-      if (!titleInput.value.trim()) titleInput.value = titleFromFile(file.name);
+      applyGuessedMetadata(fromName.title, fromName.composer);
     }
   });
 
