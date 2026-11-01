@@ -52,9 +52,28 @@
       files[name] = data;
       offset += 46 + nameLen + extraLen + commentLen;
     }
-    const xmlName = Object.keys(files).find((name) => name.endsWith("score.xml") || (name.endsWith(".xml") && !name.includes("container")));
+    const decode = (name) => new TextDecoder().decode(files[name]);
+    const names = Object.keys(files);
+
+    // Prefer the rootfile from META-INF/container.xml when present.
+    const containerName = names.find((name) => /META-INF\/container\.xml$/i.test(name));
+    if (containerName) {
+      const containerXml = decode(containerName);
+      const rootMatch = containerXml.match(/full-path\s*=\s*"([^"]+)"/i);
+      const rootPath = rootMatch?.[1]?.replace(/^\/+/, "");
+      if (rootPath) {
+        const exact = names.find((name) => name === rootPath || name.endsWith("/" + rootPath));
+        if (exact) return decode(exact);
+      }
+    }
+
+    const xmlName = names.find(
+      (name) =>
+        /(^|\/)score\.xml$/i.test(name) ||
+        (/\.(xml|musicxml)$/i.test(name) && !/container\.xml$/i.test(name) && !/^META-INF\//i.test(name))
+    );
     if (!xmlName) throw new Error("No MusicXML score was found in this file.");
-    return new TextDecoder().decode(files[xmlName]);
+    return decode(xmlName);
   }
 
   function parseMusicXml(xml) {

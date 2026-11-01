@@ -43,6 +43,35 @@
   let supabaseClient = null;
   let osmd = null;
   let viewerRequestId = 0;
+  const blobCache = new Map();
+
+  const sleep = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+  const networkErrorMessage = (err) => {
+    const msg = String(err?.message || err || "");
+    if (/failed to fetch|networkerror|load failed|network request failed/i.test(msg)) {
+      return "Could not reach the score server. Check your connection and try again.";
+    }
+    return msg || "Could not load that score.";
+  };
+
+  const fetchWithRetry = async (url, options = {}, attempts = 3) => {
+    let lastError;
+    for (let i = 0; i < attempts; i += 1) {
+      try {
+        const res = await fetch(url, options);
+        if (!res.ok && res.status >= 500 && i < attempts - 1) {
+          await sleep(250 * (i + 1));
+          continue;
+        }
+        return res;
+      } catch (err) {
+        lastError = err;
+        if (i < attempts - 1) await sleep(250 * (i + 1));
+      }
+    }
+    throw lastError || new Error("Failed to fetch");
+  };
 
   const readStoredScrollLimit = () => {
     try {
@@ -158,22 +187,40 @@
   });
 
   const fetchSharedBlob = async (item) => {
+    const cacheKey = `shared:${item.id}`;
+    if (blobCache.has(cacheKey)) return blobCache.get(cacheKey);
+
     if (usesPhpApi()) {
-      const res = await fetch(
-        `${getApiBase()}/file.php?id=${encodeURIComponent(item.id)}`
-      );
-      if (!res.ok) {
-        throw new Error((await res.text()) || "Download failed");
+      let lastError;
+      for (let i = 0; i < 3; i += 1) {
+        try {
+          const res = await fetchWithRetry(
+            `${getApiBase()}/file.php?id=${encodeURIComponent(item.id)}`,
+            { cache: "force-cache" },
+            1
+          );
+          if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(text || `Download failed (${res.status})`);
+          }
+          const blob = await res.blob();
+          blobCache.set(cacheKey, blob);
+          return blob;
+        } catch (err) {
+          lastError = err;
+          if (i < 2) await sleep(300 * (i + 1));
+        }
       }
-      return res.blob();
+      throw new Error(networkErrorMessage(lastError));
     }
     const client = getSupabase();
     if (!client) throw new Error("Exchange backend is not configured.");
     const path = item.storage_path || item.file || storagePathFor(item.id);
     const { data, error } = await client.storage.from(STORAGE_BUCKET).download(path);
     if (error || !data) {
-      throw new Error(error?.message || "Download failed");
+      throw new Error(networkErrorMessage(error) || "Download failed");
     }
+    blobCache.set(cacheKey, data);
     return data;
   };
 
@@ -869,10 +916,30 @@
       if (cached?.blob) return cached.blob;
       return fetchSharedBlob(item);
     }
-    const res = await fetch(`exchange/${item.file}`);
-    if (!res.ok) throw new Error("Could not load that score.");
-    return res.blob();
+    const cacheKey = `builtin:${item.file || item.id}`;
+    if (blobCache.has(cacheKey)) return blobCache.get(cacheKey);
+    let lastError;
+    for (let i = 0; i < 3; i += 1) {
+      try {
+        const res = await fetchWithRetry(`exchange/${item.file}`, { cache: "force-cache" }, 1);
+        if (!res.ok) throw new Error("Could not load that score.");
+        const blob = await res.blob();
+        blobCache.set(cacheKey, blob);
+        return blob;
+      } catch (err) {
+        lastError = err;
+        if (i < 2) await sleep(300 * (i + 1));
+      }
+    }
+    throw new Error(networkErrorMessage(lastError));
   };
+
+  /** OSMD/XML parsers can choke on remote DTD fetches from MusicXML DOCTYPE. */
+  const sanitizeMusicXml = (xmlText) =>
+    String(xmlText || "")
+      .replace(/^\uFEFF/, "")
+      .replace(/<!DOCTYPE[\s\S]*?>/i, "")
+      .trim();
 
   const blobToMusicXml = async (blob) => {
     const buffer = await blob.arrayBuffer();
@@ -881,9 +948,9 @@
       if (!window.KlavierPlayer?.unzipXml) {
         throw new Error("MXL preview is unavailable in this browser.");
       }
-      return window.KlavierPlayer.unzipXml(buffer);
+      return sanitizeMusicXml(await window.KlavierPlayer.unzipXml(buffer));
     }
-    const text = new TextDecoder().decode(buffer).replace(/^\uFEFF/, "").trim();
+    const text = sanitizeMusicXml(new TextDecoder().decode(buffer));
     if (!/<score-partwise\b|<score-timewise\b/i.test(text)) {
       throw new Error("That file does not look like MusicXML.");
     }
@@ -946,7 +1013,11 @@
     } catch (err) {
       if (requestId !== viewerRequestId) return;
       viewerPageEl.innerHTML = "";
-      setViewerStatus(err.message || "Could not preview that score.", "error");
+      osmd = null;
+      setViewerStatus(
+        networkErrorMessage(err) || "Could not preview that score.",
+        "error"
+      );
     }
   };
 
