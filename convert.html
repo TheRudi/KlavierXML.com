@@ -184,12 +184,62 @@
 
       let progressTimer = null;
 
+      // Planning ETA from live Noten batch (~0.9 s/measure measured; 1.3 s used for ETA).
+      const SEC_PER_MEASURE = 1.3;
+      const MEASURES_PER_PDF_BYTE = 443 / 2847184;
+
       function formatElapsed(ms) {
-        const sec = Math.floor(ms / 1000);
+        const sec = Math.max(0, Math.floor(ms / 1000));
         const m = Math.floor(sec / 60);
         const s = sec % 60;
         if (m <= 0) return s + "s";
         return m + "m " + String(s).padStart(2, "0") + "s";
+      }
+
+      function estimateFromFileSize(bytes) {
+        const estimatedMeasures = Math.max(
+          20,
+          Math.round(bytes * MEASURES_PER_PDF_BYTE)
+        );
+        const estimatedSeconds = Math.max(
+          25,
+          Math.round(estimatedMeasures * SEC_PER_MEASURE)
+        );
+        return { estimatedMeasures, estimatedSeconds, secPerMeasure: SEC_PER_MEASURE };
+      }
+
+      function progressFromEstimate(elapsedMs, estimate, serverPct) {
+        const estSec = (estimate && estimate.estimatedSeconds) || 0;
+        let timePct = 5;
+        if (estSec > 0) {
+          timePct = Math.min(95, (elapsedMs / 1000 / estSec) * 100);
+        }
+        const stagePct = typeof serverPct === "number" ? serverPct : 0;
+        return Math.max(3, Math.min(95, Math.max(timePct, stagePct * 0.35)));
+      }
+
+      function statusLine(elapsedMs, estimate, data) {
+        const msg = (data && data.message) || "Converting with Audiveris…";
+        const parts = [msg, formatElapsed(elapsedMs) + " elapsed"];
+        if (estimate && estimate.estimatedSeconds) {
+          const remainingMs = Math.max(
+            0,
+            estimate.estimatedSeconds * 1000 - elapsedMs
+          );
+          const measures = estimate.estimatedMeasures || null;
+          const rate = estimate.secPerMeasure || SEC_PER_MEASURE;
+          if (remainingMs > 1500) {
+            parts.push("~" + formatElapsed(remainingMs) + " remaining");
+          } else {
+            parts.push("finishing soon");
+          }
+          if (measures) {
+            parts.push(
+              "≈" + measures + " measures @ " + rate.toFixed(1) + " s/measure"
+            );
+          }
+        }
+        return parts.join(" · ");
       }
 
       function setProgress(pct, { indeterminate } = {}) {
@@ -239,7 +289,7 @@
         return text || "Conversion failed (" + response.status + ").";
       }
 
-      async function pollJob(jobId, startedAt) {
+      async function pollJob(jobId, startedAt, estimate) {
         const deadline = startedAt + 20 * 60 * 1000;
         while (Date.now() < deadline) {
           const elapsed = Date.now() - startedAt;
@@ -251,17 +301,29 @@
             throw new Error(await readError(response));
           }
           const data = await response.json();
-          const pct = typeof data.pct === "number" ? data.pct : 5;
-          setProgress(Math.max(pct, 3), { indeterminate: data.status !== "done" });
-          const msg = data.message || "Converting with Audiveris…";
-          status.textContent = msg + " " + formatElapsed(elapsed) + " elapsed.";
+          if (
+            data.estimatedSeconds &&
+            (!estimate || !estimate.estimatedSeconds)
+          ) {
+            estimate = {
+              estimatedMeasures: data.estimatedMeasures,
+              estimatedSeconds: data.estimatedSeconds,
+              secPerMeasure: data.secPerMeasure || SEC_PER_MEASURE,
+            };
+          }
 
           if (data.status === "done") {
+            setProgress(100, { indeterminate: false });
+            status.textContent = statusLine(elapsed, estimate, data);
             return data;
           }
           if (data.status === "error") {
             throw new Error(data.error || "Conversion failed.");
           }
+
+          const pct = progressFromEstimate(elapsed, estimate, data.pct);
+          setProgress(pct, { indeterminate: true });
+          status.textContent = statusLine(elapsed, estimate, data);
           await sleep(2000);
         }
         throw new Error(
@@ -319,7 +381,15 @@
         submitBtn.disabled = true;
         showProgress();
         const startedAt = Date.now();
-        status.textContent = "Uploading PDF…";
+        let estimate = estimateFromFileSize(file.size);
+        status.textContent =
+          "Uploading PDF… ETA ~" +
+          formatElapsed(estimate.estimatedSeconds * 1000) +
+          " (≈" +
+          estimate.estimatedMeasures +
+          " measures @ " +
+          SEC_PER_MEASURE.toFixed(1) +
+          " s/measure)";
 
         try {
           const response = await fetch("api/convert.php", {
@@ -333,12 +403,21 @@
           if (!started || !started.jobId) {
             throw new Error("Server did not start a conversion job.");
           }
+          if (started.estimatedSeconds) {
+            estimate = {
+              estimatedMeasures: started.estimatedMeasures,
+              estimatedSeconds: started.estimatedSeconds,
+              secPerMeasure: started.secPerMeasure || SEC_PER_MEASURE,
+            };
+          }
 
-          setProgress(started.pct || 5, { indeterminate: true });
-          status.textContent =
-            (started.message || "Converting with Audiveris…") + " 0s elapsed.";
+          setProgress(
+            progressFromEstimate(0, estimate, started.pct || 2),
+            { indeterminate: true }
+          );
+          status.textContent = statusLine(0, estimate, started);
 
-          const done = await pollJob(started.jobId, startedAt);
+          const done = await pollJob(started.jobId, startedAt, estimate);
           const fallbackName =
             (done && done.downloadName) ||
             file.name.replace(/\.pdf$/i, "") + ".xml";

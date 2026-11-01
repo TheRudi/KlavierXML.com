@@ -24,6 +24,11 @@ const ENHANCE_PY = '/usr/local/klavierxml-audiveris/enhance_score_pdf.py';
 const PYTHON = '/usr/bin/python3';
 const PYDEPS = '/usr/local/klavierxml-audiveris/pydeps';
 
+// Planning rate from live Noten batch (safe ETA; measured avg was ~0.9 s/measure).
+const SEC_PER_MEASURE = 1.3;
+// Measures ≈ PDF bytes × this factor (443 measures / 2,847,184 bytes in that batch).
+const MEASURES_PER_PDF_BYTE = 443 / 2847184;
+
 @ini_set('memory_limit', '512M');
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
@@ -82,15 +87,7 @@ function handle_get(): void
     exit;
   }
 
-  json_out([
-    'jobId' => $jobId,
-    'status' => $status['status'] ?? 'unknown',
-    'pct' => (int) ($status['pct'] ?? 0),
-    'message' => (string) ($status['message'] ?? ''),
-    'error' => $status['error'] ?? null,
-    'downloadName' => $status['downloadName'] ?? null,
-    'updatedAt' => $status['updatedAt'] ?? null,
-  ]);
+  json_out(status_payload($jobId, $status));
 }
 
 function handle_post(): void
@@ -134,6 +131,7 @@ function handle_post(): void
     throw new RuntimeException('Could not store uploaded PDF.');
   }
 
+  $estimate = estimate_conversion((int) $file['size']);
   $meta = [
     'jobId' => $jobId,
     'pdf' => basename($inputPdf),
@@ -142,6 +140,10 @@ function handle_post(): void
     'composer' => $composer,
     'origName' => $origName,
     'createdAt' => gmdate('c'),
+    'pdfBytes' => (int) $file['size'],
+    'estimatedMeasures' => $estimate['estimatedMeasures'],
+    'estimatedSeconds' => $estimate['estimatedSeconds'],
+    'secPerMeasure' => SEC_PER_MEASURE,
   ];
   file_put_contents($jobDir . '/meta.json', json_encode($meta, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
   write_status($jobDir, [
@@ -150,6 +152,9 @@ function handle_post(): void
     'message' => 'Upload received. Starting Audiveris…',
     'error' => null,
     'downloadName' => $safeBase . '.xml',
+    'estimatedMeasures' => $estimate['estimatedMeasures'],
+    'estimatedSeconds' => $estimate['estimatedSeconds'],
+    'secPerMeasure' => SEC_PER_MEASURE,
   ]);
 
   // Return immediately so the browser can poll; conversion continues below.
@@ -158,12 +163,16 @@ function handle_post(): void
   @ini_set('max_execution_time', '0');
 
   header('Content-Type: application/json; charset=utf-8');
-  echo json_encode([
-    'jobId' => $jobId,
+  echo json_encode(status_payload($jobId, [
     'status' => 'queued',
     'pct' => 2,
     'message' => 'Upload received. Converting in the background…',
-  ], JSON_UNESCAPED_UNICODE);
+    'error' => null,
+    'downloadName' => $safeBase . '.xml',
+    'estimatedMeasures' => $estimate['estimatedMeasures'],
+    'estimatedSeconds' => $estimate['estimatedSeconds'],
+    'secPerMeasure' => SEC_PER_MEASURE,
+  ]), JSON_UNESCAPED_UNICODE);
 
   if (function_exists('fastcgi_finish_request')) {
     fastcgi_finish_request();
@@ -304,6 +313,38 @@ function run_conversion_job(string $jobDir, array $meta): void
   }
 }
 
+function estimate_conversion(int $pdfBytes): array
+{
+  $measures = (int) max(20, (int) round($pdfBytes * MEASURES_PER_PDF_BYTE));
+  $seconds = (int) max(25, (int) round($measures * SEC_PER_MEASURE));
+  return [
+    'estimatedMeasures' => $measures,
+    'estimatedSeconds' => $seconds,
+  ];
+}
+
+function status_payload(string $jobId, array $status): array
+{
+  return [
+    'jobId' => $jobId,
+    'status' => $status['status'] ?? 'unknown',
+    'pct' => (int) ($status['pct'] ?? 0),
+    'message' => (string) ($status['message'] ?? ''),
+    'error' => $status['error'] ?? null,
+    'downloadName' => $status['downloadName'] ?? null,
+    'updatedAt' => $status['updatedAt'] ?? null,
+    'estimatedMeasures' => isset($status['estimatedMeasures'])
+      ? (int) $status['estimatedMeasures']
+      : null,
+    'estimatedSeconds' => isset($status['estimatedSeconds'])
+      ? (int) $status['estimatedSeconds']
+      : null,
+    'secPerMeasure' => isset($status['secPerMeasure'])
+      ? (float) $status['secPerMeasure']
+      : SEC_PER_MEASURE,
+  ];
+}
+
 function read_status(string $path): array
 {
   $raw = (string) file_get_contents($path);
@@ -313,6 +354,16 @@ function read_status(string $path): array
 
 function write_status(string $jobDir, array $status): void
 {
+  // Preserve ETA fields across status updates.
+  $existingPath = $jobDir . '/status.json';
+  if (is_file($existingPath)) {
+    $existing = read_status($existingPath);
+    foreach (['estimatedMeasures', 'estimatedSeconds', 'secPerMeasure'] as $key) {
+      if (!array_key_exists($key, $status) && array_key_exists($key, $existing)) {
+        $status[$key] = $existing[$key];
+      }
+    }
+  }
   $status['updatedAt'] = gmdate('c');
   file_put_contents(
     $jobDir . '/status.json',
