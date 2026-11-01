@@ -10,7 +10,7 @@
     />
     <link rel="canonical" href="https://klavierxml.com/exchange.html" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=total1" />
+    <link rel="stylesheet" href="styles.css?v=edit1" />
   </head>
   <body class="page-exchange">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -220,6 +220,67 @@
     </main>
 
     <div
+      class="exchange-dialog"
+      id="yesno-dialog"
+      hidden
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="yesno-title"
+    >
+      <button
+        type="button"
+        class="exchange-dialog-backdrop"
+        id="yesno-backdrop"
+        aria-label="Dismiss"
+      ></button>
+      <div class="exchange-dialog-panel">
+        <h2 id="yesno-title" class="exchange-dialog-title">Confirm upload</h2>
+        <p class="exchange-dialog-message" id="yesno-message"></p>
+        <div class="cta-row exchange-dialog-actions">
+          <button type="button" class="btn btn-primary" id="yesno-yes">Yes</button>
+          <button type="button" class="btn btn-ghost" id="yesno-no">No</button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="exchange-dialog"
+      id="edit-dialog"
+      hidden
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="edit-dialog-title"
+    >
+      <button
+        type="button"
+        class="exchange-dialog-backdrop"
+        id="edit-backdrop"
+        aria-label="Close edit dialog"
+      ></button>
+      <div class="exchange-dialog-panel">
+        <h2 id="edit-dialog-title" class="exchange-dialog-title">Edit score</h2>
+        <p class="exchange-dialog-message">
+          Updates the exchange listing, MusicXML metadata, and download filename.
+        </p>
+        <label class="exchange-dialog-field">
+          Title
+          <input id="edit-title" type="text" maxlength="120" autocomplete="off" />
+        </label>
+        <label class="exchange-dialog-field">
+          Composer
+          <input id="edit-composer" type="text" maxlength="160" autocomplete="off" />
+        </label>
+        <p class="exchange-dialog-status" id="edit-status" role="status"></p>
+        <div class="cta-row exchange-dialog-actions">
+          <button type="button" class="btn btn-primary" id="edit-save">
+            Save changes
+          </button>
+          <button type="button" class="btn btn-ghost" id="edit-cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div
       class="score-viewer"
       id="score-viewer"
       hidden
@@ -274,6 +335,6 @@
     <script src="app.js?v=viewer1" defer></script>
     <script src="exchange-config.js?v=preview2" defer></script>
     <script src="player.js?v=preview2" defer></script>
-    <script src="exchange.js?v=max10k" defer></script>
+    <script src="exchange.js?v=edit1" defer></script>
   </body>
 </html>

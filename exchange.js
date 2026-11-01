@@ -40,8 +40,24 @@
   const viewerPageEl = document.getElementById("score-viewer-page");
   const viewerCloseBtn = document.getElementById("score-viewer-close");
   const viewerCloseBackdrop = document.getElementById("score-viewer-close-backdrop");
+  const yesNoDialog = document.getElementById("yesno-dialog");
+  const yesNoMessage = document.getElementById("yesno-message");
+  const yesNoTitle = document.getElementById("yesno-title");
+  const yesNoYes = document.getElementById("yesno-yes");
+  const yesNoNo = document.getElementById("yesno-no");
+  const yesNoBackdrop = document.getElementById("yesno-backdrop");
+  const editDialog = document.getElementById("edit-dialog");
+  const editTitleInput = document.getElementById("edit-title");
+  const editComposerInput = document.getElementById("edit-composer");
+  const editStatusEl = document.getElementById("edit-status");
+  const editSaveBtn = document.getElementById("edit-save");
+  const editCancelBtn = document.getElementById("edit-cancel");
+  const editBackdrop = document.getElementById("edit-backdrop");
 
   if (!listEl || !form) return;
+
+  let yesNoResolver = null;
+  let editingItem = null;
 
   let builtin = [];
   let sharedScores = [];
@@ -168,11 +184,36 @@
     return best;
   };
 
+  const askYesNo = (message, title = "Confirm upload") =>
+    new Promise((resolve) => {
+      if (!yesNoDialog || !yesNoMessage || !yesNoYes || !yesNoNo) {
+        resolve(window.confirm(message));
+        return;
+      }
+      if (yesNoResolver) {
+        yesNoResolver(false);
+        yesNoResolver = null;
+      }
+      yesNoResolver = resolve;
+      if (yesNoTitle) yesNoTitle.textContent = title;
+      yesNoMessage.textContent = message;
+      yesNoDialog.hidden = false;
+      yesNoYes.focus();
+    });
+
+  const closeYesNo = (answer) => {
+    if (yesNoDialog) yesNoDialog.hidden = true;
+    const resolve = yesNoResolver;
+    yesNoResolver = null;
+    if (resolve) resolve(Boolean(answer));
+  };
+
   const confirmSimilarUpload = (title, composer, similar) => {
     const existing = `${similar.item.composer} — ${similar.item.title}`;
     const incoming = `${composer} — ${title}`;
-    return window.confirm(
-      `Upload this song: ${incoming}?\n\nIt looks very similar to ${existing} on the exchange server.`
+    return askYesNo(
+      `Upload this song: ${incoming}\n\nbecause it looks very similar to ${existing} on the exchange server.`,
+      "Similar score found"
     );
   };
 
@@ -412,9 +453,130 @@
     sharedScores = sharedScores.filter((score) => score.id !== item.id);
   };
 
+  const setEditStatus = (message, kind = "") => {
+    if (!editStatusEl) return;
+    editStatusEl.textContent = message || "";
+    editStatusEl.dataset.kind = kind;
+  };
+
+  const closeEditDialog = () => {
+    editingItem = null;
+    if (editDialog) editDialog.hidden = true;
+    setEditStatus("");
+  };
+
+  const openEditDialog = (item) => {
+    if (!editDialog || !editTitleInput || !editComposerInput) return;
+    editingItem = item;
+    editTitleInput.value = item.title || "";
+    editComposerInput.value = item.composer || "";
+    setEditStatus("");
+    editDialog.hidden = false;
+    editTitleInput.focus();
+  };
+
+  const updateSharedScore = async (item, title, composer) => {
+    requireSharedBackend();
+    if (!usesPhpApi()) {
+      throw new Error("Editing scores requires the PHP exchange backend.");
+    }
+    const blob = await fetchSharedBlob(item);
+    const buffer = await blob.arrayBuffer();
+    if (!window.KlavierPlayer?.unzipXml) {
+      throw new Error("Score reader is not ready yet. Try again in a moment.");
+    }
+    const xmlText = await window.KlavierPlayer.unzipXml(buffer);
+    const updatedXml = replaceXmlMetadata(xmlText, title, composer);
+    const archive = await buildMxlArchive(updatedXml);
+    if (archive.length > MAX_MXL_BYTES) {
+      throw new Error("Updated MXL is larger than 100 KB.");
+    }
+    const filename = buildScoreFilename(composer, title);
+    const outBlob = new Blob([archive], {
+      type: "application/vnd.recordare.musicxml",
+    });
+
+    const formData = new FormData();
+    formData.append("action", "update");
+    formData.append("id", item.id);
+    formData.append("title", title);
+    formData.append("composer", composer);
+    formData.append("filename", filename);
+    formData.append("file", outBlob, filename);
+
+    const res = await fetch(`${getApiBase()}/exchange.php`, {
+      method: "POST",
+      headers: {
+        "X-Admin-Password": String(adminPasswordInput?.value || ""),
+      },
+      body: formData,
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(body.error || "Could not update that score.");
+    }
+
+    const updated = body.score ? rowToScore(body.score) : {
+      ...item,
+      title,
+      composer,
+      filename,
+      bytes: archive.length,
+      format: "mxl",
+    };
+    sharedScores = sharedScores.map((score) =>
+      score.id === item.id ? { ...score, ...updated, source: "shared" } : score
+    );
+    blobCache.delete(`shared:${item.id}`);
+    try {
+      await deleteLocal(item.id);
+    } catch (_) {
+      /* ignore */
+    }
+    return updated;
+  };
+
+  const saveEditedScore = async () => {
+    if (!editingItem) return;
+    const title = String(editTitleInput?.value || "").trim();
+    const composer = String(editComposerInput?.value || "").trim();
+    if (title.length < 2) {
+      setEditStatus("Title must be at least 2 characters.", "error");
+      editTitleInput?.focus();
+      return;
+    }
+    if (composer.length < 2) {
+      setEditStatus("Composer must be at least 2 characters.", "error");
+      editComposerInput?.focus();
+      return;
+    }
+    if (!canShowRemove()) {
+      setEditStatus("Admin password required.", "error");
+      return;
+    }
+
+    try {
+      setEditStatus("Updating score file and listing…");
+      if (editSaveBtn) editSaveBtn.disabled = true;
+      await updateSharedScore(editingItem, title, composer);
+      closeEditDialog();
+      await loadShared().catch(() => {});
+      render();
+      setStatus("Updated title, composer, MusicXML metadata, and filename.");
+    } catch (err) {
+      setEditStatus(err.message || "Could not update that score.", "error");
+    } finally {
+      if (editSaveBtn) editSaveBtn.disabled = false;
+    }
+  };
+
   const removeScore = async (item) => {
     const label = item.title || "this score";
-    if (!window.confirm(`Remove “${label}” from the exchange?`)) return;
+    const ok = await askYesNo(
+      `Remove “${label}” from the exchange?`,
+      "Remove score"
+    );
+    if (!ok) return;
 
     try {
       if (item.source === "shared") {
@@ -892,6 +1054,96 @@
     else root.appendChild(node);
   };
 
+  const filenameSlug = (value) =>
+    String(value || "")
+      .trim()
+      .replace(/\s+/g, "_")
+      .replace(/[^A-Za-z0-9._-]+/g, "")
+      .replace(/^[._-]+|[._-]+$/g, "");
+
+  const buildScoreFilename = (composer, title) => {
+    const c = filenameSlug(composer);
+    const t = filenameSlug(title);
+    if (c && t) return `${c}-${t}.mxl`;
+    if (t) return `${t}.mxl`;
+    if (c) return `${c}.mxl`;
+    return "score.mxl";
+  };
+
+  const serializeMusicXml = (doc, originalText) => {
+    const serialized = new XMLSerializer().serializeToString(doc);
+    if (/^\s*<\?xml\b/i.test(originalText) && !/^\s*<\?xml\b/i.test(serialized)) {
+      return `<?xml version="1.0" encoding="UTF-8"?>\n${serialized}`;
+    }
+    return serialized;
+  };
+
+  const ensureIdentification = (doc, root) => {
+    let identification = root.getElementsByTagName("identification")[0];
+    if (identification) return identification;
+    identification = doc.createElement("identification");
+    const work = root.getElementsByTagName("work")[0];
+    const movementTitle = root.getElementsByTagName("movement-title")[0];
+    const movementNumber = root.getElementsByTagName("movement-number")[0];
+    const anchor = work || movementNumber || movementTitle;
+    if (anchor?.nextSibling) root.insertBefore(identification, anchor.nextSibling);
+    else if (anchor) root.appendChild(identification);
+    else insertAfterRootOpen(doc, root, identification);
+    return identification;
+  };
+
+  /** Set or replace work-title and composer creator in MusicXML. */
+  const replaceXmlMetadata = (xmlText, title, composer) => {
+    const wantedTitle = String(title || "").trim();
+    const wantedComposer = String(composer || "").trim();
+    if (!wantedTitle && !wantedComposer) return xmlText;
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlText, "application/xml");
+    if (doc.querySelector("parsererror")) {
+      throw new Error("That MusicXML file could not be parsed.");
+    }
+    const root =
+      doc.getElementsByTagName("score-partwise")[0] ||
+      doc.getElementsByTagName("score-timewise")[0];
+    if (!root) return xmlText;
+
+    if (wantedTitle) {
+      let work = root.getElementsByTagName("work")[0];
+      if (!work) {
+        work = doc.createElement("work");
+        insertAfterRootOpen(doc, root, work);
+      }
+      let workTitle = work.getElementsByTagName("work-title")[0];
+      if (!workTitle) {
+        workTitle = doc.createElement("work-title");
+        work.insertBefore(workTitle, work.firstChild);
+      }
+      workTitle.textContent = wantedTitle;
+      const movementTitle = root.getElementsByTagName("movement-title")[0];
+      if (movementTitle) movementTitle.textContent = wantedTitle;
+    }
+
+    if (wantedComposer) {
+      const identification = ensureIdentification(doc, root);
+      let composerEl = [...identification.getElementsByTagName("creator")].find(
+        (el) =>
+          String(el.getAttribute("type") || "composer").toLowerCase() ===
+          "composer"
+      );
+      if (!composerEl) {
+        composerEl = doc.createElement("creator");
+        composerEl.setAttribute("type", "composer");
+        const encoding = identification.getElementsByTagName("encoding")[0];
+        if (encoding) identification.insertBefore(composerEl, encoding);
+        else identification.insertBefore(composerEl, identification.firstChild);
+      }
+      composerEl.textContent = wantedComposer;
+    }
+
+    return serializeMusicXml(doc, xmlText);
+  };
+
   // MusicXML order: work, movement-*, identification, …
   const ensureXmlMetadata = (xmlText, title, composer) => {
     const wantedTitle = String(title || "").trim();
@@ -920,21 +1172,7 @@
     }
 
     if (wantedComposer && !scoreHasComposer(doc)) {
-      let identification = root.getElementsByTagName("identification")[0];
-      if (!identification) {
-        identification = doc.createElement("identification");
-        const work = root.getElementsByTagName("work")[0];
-        const movementTitle = root.getElementsByTagName("movement-title")[0];
-        const movementNumber = root.getElementsByTagName("movement-number")[0];
-        const anchor = work || movementNumber || movementTitle;
-        if (anchor?.nextSibling) {
-          root.insertBefore(identification, anchor.nextSibling);
-        } else if (anchor) {
-          root.appendChild(identification);
-        } else {
-          insertAfterRootOpen(doc, root, identification);
-        }
-      }
+      const identification = ensureIdentification(doc, root);
       const creator = doc.createElement("creator");
       creator.setAttribute("type", "composer");
       creator.textContent = wantedComposer;
@@ -943,12 +1181,7 @@
       else identification.insertBefore(creator, identification.firstChild);
     }
 
-    const serialized = new XMLSerializer().serializeToString(doc);
-    // Keep an XML declaration if the source had one.
-    if (/^\s*<\?xml\b/i.test(xmlText) && !/^\s*<\?xml\b/i.test(serialized)) {
-      return `<?xml version="1.0" encoding="UTF-8"?>\n${serialized}`;
-    }
-    return serialized;
+    return serializeMusicXml(doc, xmlText);
   };
 
   const normalizeMusicXml = (buffer) => {
@@ -1249,6 +1482,15 @@
       actions.append(downloadBtn);
 
       if (canShowRemove() && item.source === "shared") {
+        const editBtn = document.createElement("button");
+        editBtn.type = "button";
+        editBtn.className = "btn btn-ghost";
+        editBtn.textContent = "Edit";
+        editBtn.addEventListener("click", () => {
+          openEditDialog(item);
+        });
+        actions.append(editBtn);
+
         const removeBtn = document.createElement("button");
         removeBtn.type = "button";
         removeBtn.className = "btn btn-ghost";
@@ -1526,7 +1768,7 @@
               setStatus(
                 `Similar score found for ${i + 1} of ${files.length}: ${file.name}`
               );
-              if (!confirmSimilarUpload(title, composer, similar)) {
+              if (!(await confirmSimilarUpload(title, composer, similar))) {
                 skipped += 1;
                 continue;
               }
@@ -1617,10 +1859,29 @@
     render();
   });
 
+  yesNoYes?.addEventListener("click", () => closeYesNo(true));
+  yesNoNo?.addEventListener("click", () => closeYesNo(false));
+  yesNoBackdrop?.addEventListener("click", () => closeYesNo(false));
+
+  editSaveBtn?.addEventListener("click", () => {
+    saveEditedScore();
+  });
+  editCancelBtn?.addEventListener("click", closeEditDialog);
+  editBackdrop?.addEventListener("click", closeEditDialog);
+
   viewerCloseBtn?.addEventListener("click", closeScoreViewer);
   viewerCloseBackdrop?.addEventListener("click", closeScoreViewer);
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && viewerEl && !viewerEl.hidden) {
+    if (event.key !== "Escape") return;
+    if (yesNoDialog && !yesNoDialog.hidden) {
+      closeYesNo(false);
+      return;
+    }
+    if (editDialog && !editDialog.hidden) {
+      closeEditDialog();
+      return;
+    }
+    if (viewerEl && !viewerEl.hidden) {
       closeScoreViewer();
     }
   });

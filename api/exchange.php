@@ -35,7 +35,12 @@ try {
   if ($method === 'GET') {
     handle_list($pdo, $config);
   } elseif ($method === 'POST') {
-    handle_upload($pdo, $config);
+    $action = trim((string) ($_POST['action'] ?? ''));
+    if ($action === 'update') {
+      handle_update($pdo, $config);
+    } else {
+      handle_upload($pdo, $config);
+    }
   } elseif ($method === 'DELETE') {
     handle_delete($pdo, $config);
   } else {
@@ -212,14 +217,105 @@ function handle_upload(PDO $pdo, array $config): void
   echo json_encode(['ok' => true, 'score' => $row], JSON_UNESCAPED_UNICODE);
 }
 
-function handle_delete(PDO $pdo, array $config): void
+function require_admin_password(array $config): void
 {
-  $password = $_SERVER['HTTP_X_ADMIN_PASSWORD'] ?? ($_GET['password'] ?? '');
+  $password = $_SERVER['HTTP_X_ADMIN_PASSWORD'] ?? ($_POST['password'] ?? ($_GET['password'] ?? ''));
   if (!hash_equals((string) $config['remove_password'], (string) $password)) {
     http_response_code(403);
     echo json_encode(['error' => 'Wrong remove password.']);
+    exit;
+  }
+}
+
+function handle_update(PDO $pdo, array $config): void
+{
+  require_admin_password($config);
+
+  $maxBytes = (int) ($config['max_mxl_bytes'] ?? 100 * 1024);
+  $id = trim((string) ($_POST['id'] ?? ''));
+  $title = trim((string) ($_POST['title'] ?? ''));
+  $composer = trim((string) ($_POST['composer'] ?? ''));
+  $filename = trim((string) ($_POST['filename'] ?? ''));
+
+  if ($id === '' || !preg_match('/^[a-zA-Z0-9._-]{1,120}$/', $id)) {
+    http_response_code(400);
+    echo json_encode(['error' => 'Invalid score id.']);
     return;
   }
+  if ($title === '' || $composer === '' || $filename === '') {
+    http_response_code(400);
+    echo json_encode(['error' => 'Title, composer, and filename are required.']);
+    return;
+  }
+  if (!isset($_FILES['file']) || !is_uploaded_file($_FILES['file']['tmp_name'])) {
+    http_response_code(400);
+    echo json_encode(['error' => 'Missing updated score file.']);
+    return;
+  }
+
+  $size = (int) $_FILES['file']['size'];
+  if ($size <= 0 || $size > $maxBytes) {
+    http_response_code(400);
+    echo json_encode(['error' => 'Updated score file is too large for the exchange.']);
+    return;
+  }
+
+  $sel = $pdo->prepare('SELECT id FROM exchange_scores WHERE id = ?');
+  $sel->execute([$id]);
+  if (!$sel->fetchColumn()) {
+    http_response_code(404);
+    echo json_encode(['error' => 'Score not found.']);
+    return;
+  }
+
+  $absPath = rtrim($config['storage_dir'], '/') . '/' . $id . '.mxl';
+  $tmpPath = $absPath . '.tmp';
+  if (!move_uploaded_file($_FILES['file']['tmp_name'], $tmpPath)) {
+    throw new RuntimeException('Could not store the updated score file.');
+  }
+  if (!rename($tmpPath, $absPath)) {
+    @unlink($tmpPath);
+    throw new RuntimeException('Could not replace the score file.');
+  }
+  @chmod($absPath, 0664);
+
+  $upd = $pdo->prepare(
+    'UPDATE exchange_scores
+     SET title = :title,
+         composer = :composer,
+         filename = :filename,
+         format = :format,
+         bytes = :bytes
+     WHERE id = :id'
+  );
+  $upd->execute([
+    'id' => $id,
+    'title' => $title,
+    'composer' => $composer,
+    'filename' => $filename,
+    'format' => 'mxl',
+    'bytes' => $size,
+  ]);
+
+  $row = $pdo->prepare(
+    'SELECT id, title, composer, credit, filename, format, bytes, added, license, storage_path
+     FROM exchange_scores WHERE id = ?'
+  );
+  $row->execute([$id]);
+  $score = $row->fetch();
+  if ($score) {
+    $score['bytes'] = (int) $score['bytes'];
+    if (!empty($score['added']) && is_string($score['added'])) {
+      $score['added'] = substr($score['added'], 0, 10);
+    }
+  }
+
+  echo json_encode(['ok' => true, 'score' => $score], JSON_UNESCAPED_UNICODE);
+}
+
+function handle_delete(PDO $pdo, array $config): void
+{
+  require_admin_password($config);
 
   $id = trim((string) ($_GET['id'] ?? ''));
   if ($id === '' || !preg_match('/^[a-zA-Z0-9._-]{1,120}$/', $id)) {
