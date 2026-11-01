@@ -1637,6 +1637,28 @@ button {
   opacity: 0.85;
 }
 
+.library-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+  margin: 0 0 0.75rem;
+  max-width: 28rem;
+}
+
+.library-pager-status {
+  margin: 0;
+  color: var(--ivory-mute);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.library-pager .btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .library-admin {
   display: grid;
   gap: 0.25rem;

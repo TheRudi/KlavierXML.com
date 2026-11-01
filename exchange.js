@@ -22,6 +22,10 @@
   const scrollLimitLabelEl = document.getElementById("library-scroll-label");
   const songCountEl = document.getElementById("library-song-count");
   const countEl = document.getElementById("library-count");
+  const pagerEl = document.getElementById("library-pager");
+  const pagerStatusEl = document.getElementById("library-pager-status");
+  const prevPageBtn = document.getElementById("library-prev");
+  const nextPageBtn = document.getElementById("library-next");
   const adminPasswordInput = document.getElementById("admin-password");
   const SCROLL_LIMIT_STORAGE_KEY = "klavierxml-exchange-scroll-limit";
   const SCROLL_LIMIT_ALL = 1010;
@@ -41,6 +45,7 @@
   let titleQuery = "";
   let composerFilter = "";
   let scrollLimit = 20;
+  let listOffset = 0;
   let supabaseClient = null;
   let osmd = null;
   let viewerRequestId = 0;
@@ -458,20 +463,63 @@
     statusEl.dataset.kind = kind;
   };
 
-  const updateCount = (shown, total) => {
+  const pageSize = () => displayLimit();
+
+  const clampListOffset = (matchedCount) => {
+    const size = pageSize();
+    if (!Number.isFinite(size) || matchedCount <= 0) {
+      listOffset = 0;
+      return;
+    }
+    listOffset = Math.floor(Math.max(0, listOffset) / size) * size;
+    if (listOffset >= matchedCount) {
+      listOffset = Math.floor(Math.max(0, matchedCount - 1) / size) * size;
+    }
+  };
+
+  const updateCount = (shown, total, from = 0) => {
     const matched = total ?? filteredItems().length;
-    const displayed = shown ?? Math.min(matched, displayLimit());
+    const displayed = shown ?? 0;
+    const start = matched === 0 ? 0 : from + 1;
+    const end = from + displayed;
     if (countEl) {
       countEl.textContent =
-        displayed < matched
-          ? `${displayed} of ${matched} scores · max ${MAX_FILES}`
-          : `${matched} score${matched === 1 ? "" : "s"} · max ${MAX_FILES}`;
+        matched === 0
+          ? `0 scores · max ${MAX_FILES}`
+          : displayed < matched || from > 0
+            ? `${start}–${end} of ${matched} scores · max ${MAX_FILES}`
+            : `${matched} score${matched === 1 ? "" : "s"} · max ${MAX_FILES}`;
     }
     if (songCountEl) {
       songCountEl.textContent =
-        displayed < matched
-          ? `${displayed} of ${matched} songs`
-          : `${matched} song${matched === 1 ? "" : "s"}`;
+        matched === 0
+          ? "0 songs"
+          : displayed < matched || from > 0
+            ? `${start}–${end} of ${matched} songs`
+            : `${matched} song${matched === 1 ? "" : "s"}`;
+    }
+  };
+
+  const updatePager = (matchedCount, shownCount) => {
+    const size = pageSize();
+    const paged = Number.isFinite(size);
+    if (!pagerEl || !prevPageBtn || !nextPageBtn) return;
+
+    if (!paged || matchedCount <= size) {
+      pagerEl.hidden = true;
+      return;
+    }
+
+    pagerEl.hidden = false;
+    const hasPrev = listOffset > 0;
+    const hasNext = listOffset + shownCount < matchedCount;
+    prevPageBtn.disabled = !hasPrev;
+    nextPageBtn.disabled = !hasNext;
+    nextPageBtn.textContent = `Next ${size}`;
+    if (pagerStatusEl) {
+      const page = Math.floor(listOffset / size) + 1;
+      const pages = Math.max(1, Math.ceil(matchedCount / size));
+      pagerStatusEl.textContent = `Page ${page} of ${pages}`;
     }
   };
 
@@ -506,11 +554,13 @@
 
   const filteredItems = () => catalogItems().filter(matchesFilters);
 
-  /** Matching songs, capped by the show-limit slider (All = uncapped). */
+  /** Matching songs for the current page (All = full list). */
   const visibleItems = () => {
     const items = filteredItems();
-    const limit = displayLimit();
-    return Number.isFinite(limit) ? items.slice(0, limit) : items;
+    const size = pageSize();
+    if (!Number.isFinite(size)) return items;
+    clampListOffset(items.length);
+    return items.slice(listOffset, listOffset + size);
   };
 
   const uniqueComposers = () => {
@@ -1046,10 +1096,12 @@
   const render = () => {
     refreshComposerList();
     const matched = filteredItems();
+    clampListOffset(matched.length);
     const items = visibleItems();
     listEl.innerHTML = "";
     emptyEl.hidden = matched.length > 0;
-    updateCount(items.length, matched.length);
+    updateCount(items.length, matched.length, listOffset);
+    updatePager(matched.length, items.length);
 
     items.forEach((item) => {
       const li = document.createElement("li");
@@ -1304,11 +1356,13 @@
 
   searchInput?.addEventListener("input", () => {
     titleQuery = foldText(searchInput.value.trim());
+    listOffset = 0;
     render();
   });
 
   composerSelect?.addEventListener("change", () => {
     composerFilter = composerSelect.value;
+    listOffset = 0;
     render();
   });
 
@@ -1318,12 +1372,27 @@
       Number.isFinite(n) && n >= SCROLL_LIMIT_ALL
         ? SCROLL_LIMIT_ALL
         : Math.min(1000, Math.max(20, Math.round((n || 20) / 10) * 10));
+    listOffset = 0;
     syncScrollLimitUi();
     try {
       localStorage.setItem(SCROLL_LIMIT_STORAGE_KEY, String(scrollLimit));
     } catch (_) {
       /* ignore quota / private mode */
     }
+    render();
+  });
+
+  prevPageBtn?.addEventListener("click", () => {
+    const size = pageSize();
+    if (!Number.isFinite(size)) return;
+    listOffset = Math.max(0, listOffset - size);
+    render();
+  });
+
+  nextPageBtn?.addEventListener("click", () => {
+    const size = pageSize();
+    if (!Number.isFinite(size)) return;
+    listOffset += size;
     render();
   });
 
