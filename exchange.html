@@ -10,7 +10,7 @@
     />
     <link rel="canonical" href="https://klavierxml.com/exchange.html" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=search1" />
+    <link rel="stylesheet" href="styles.css?v=scroll1" />
   </head>
   <body class="page-exchange">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -130,6 +130,26 @@
           </label>
         </div>
 
+        <label class="library-scroll-limit">
+          <span class="library-scroll-limit-head" id="library-scroll-label">
+            Scroll after 20 songs
+          </span>
+          <input
+            id="library-scroll-limit"
+            type="range"
+            min="20"
+            max="1010"
+            step="10"
+            value="20"
+            aria-valuetext="20 songs"
+          />
+          <span class="library-scroll-limit-ends" aria-hidden="true">
+            <span>20</span>
+            <span>1000</span>
+            <span>All</span>
+          </span>
+        </label>
+
         <label class="library-admin">
           Admin password
           <input
@@ -218,6 +238,6 @@
     <script src="app.js?v=viewer1" defer></script>
     <script src="exchange-config.js?v=viewer1" defer></script>
     <script src="player.js?v=viewer1" defer></script>
-    <script src="exchange.js?v=search1" defer></script>
+    <script src="exchange.js?v=scroll1" defer></script>
   </body>
 </html>

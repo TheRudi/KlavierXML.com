@@ -18,8 +18,12 @@
   const composerInput = document.getElementById("score-composer");
   const searchInput = document.getElementById("library-search");
   const composerSelect = document.getElementById("library-composer");
+  const scrollLimitInput = document.getElementById("library-scroll-limit");
+  const scrollLimitLabelEl = document.getElementById("library-scroll-label");
   const countEl = document.getElementById("library-count");
   const adminPasswordInput = document.getElementById("admin-password");
+  const SCROLL_LIMIT_STORAGE_KEY = "klavierxml-exchange-scroll-limit";
+  const SCROLL_LIMIT_ALL = 1010;
   const viewerEl = document.getElementById("score-viewer");
   const viewerTitleEl = document.getElementById("score-viewer-title");
   const viewerMetaEl = document.getElementById("score-viewer-meta");
@@ -35,9 +39,59 @@
   let localScores = [];
   let titleQuery = "";
   let composerFilter = "";
+  let scrollLimit = 20;
   let supabaseClient = null;
   let osmd = null;
   let viewerRequestId = 0;
+
+  const readStoredScrollLimit = () => {
+    try {
+      const raw = localStorage.getItem(SCROLL_LIMIT_STORAGE_KEY);
+      if (raw == null) return 20;
+      const n = Number(raw);
+      if (!Number.isFinite(n)) return 20;
+      if (n >= SCROLL_LIMIT_ALL) return SCROLL_LIMIT_ALL;
+      return Math.min(1000, Math.max(20, Math.round(n / 10) * 10));
+    } catch (_) {
+      return 20;
+    }
+  };
+
+  const syncScrollLimitUi = () => {
+    const isAll = scrollLimit >= SCROLL_LIMIT_ALL;
+    const valueText = isAll ? "All songs, no scroll limit" : `${scrollLimit} songs`;
+    if (scrollLimitInput) {
+      scrollLimitInput.value = String(scrollLimit);
+      scrollLimitInput.setAttribute("aria-valuetext", valueText);
+    }
+    if (scrollLimitLabelEl) {
+      scrollLimitLabelEl.textContent = isAll
+        ? "Show all songs (no list scroll)"
+        : `Scroll after ${scrollLimit} songs`;
+    }
+  };
+
+  const applyListScrollLimit = () => {
+    if (!listEl) return;
+    const items = listEl.querySelectorAll(".exchange-item");
+    const unlimited =
+      scrollLimit >= SCROLL_LIMIT_ALL || items.length <= scrollLimit;
+    if (unlimited) {
+      listEl.classList.remove("is-scroll-limited");
+      listEl.style.maxHeight = "";
+      return;
+    }
+
+    let height = 0;
+    for (let i = 0; i < scrollLimit; i += 1) {
+      height += items[i].offsetHeight;
+    }
+    listEl.classList.add("is-scroll-limited");
+    listEl.style.maxHeight = `${height}px`;
+  };
+
+  scrollLimit = readStoredScrollLimit();
+  syncScrollLimitUi();
 
   /** Fold accents/umlauts/diaeresis/cedilla so "fur" matches "für", "Noel" matches "Noël". */
   const foldText = (text) =>
@@ -994,6 +1048,8 @@
       li.append(meta, actions);
       listEl.append(li);
     });
+
+    applyListScrollLimit();
   };
 
   const loadBuiltin = async () => {
@@ -1158,8 +1214,27 @@
     render();
   });
 
+  scrollLimitInput?.addEventListener("input", () => {
+    const n = Number(scrollLimitInput.value);
+    scrollLimit =
+      Number.isFinite(n) && n >= SCROLL_LIMIT_ALL
+        ? SCROLL_LIMIT_ALL
+        : Math.min(1000, Math.max(20, Math.round((n || 20) / 10) * 10));
+    syncScrollLimitUi();
+    try {
+      localStorage.setItem(SCROLL_LIMIT_STORAGE_KEY, String(scrollLimit));
+    } catch (_) {
+      /* ignore quota / private mode */
+    }
+    applyListScrollLimit();
+  });
+
   adminPasswordInput?.addEventListener("input", () => {
     render();
+  });
+
+  window.addEventListener("resize", () => {
+    applyListScrollLimit();
   });
 
   viewerCloseBtn?.addEventListener("click", closeScoreViewer);

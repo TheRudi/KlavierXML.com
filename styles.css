@@ -1596,6 +1596,40 @@ button {
   font: inherit;
 }
 
+.library-scroll-limit {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0 0 0.75rem;
+  color: var(--ivory-mute);
+  font-size: 0.8rem;
+  max-width: 28rem;
+}
+
+.library-scroll-limit-head strong {
+  color: var(--ivory);
+  font-weight: 600;
+}
+
+.library-scroll-limit input[type="range"] {
+  width: 100%;
+  accent-color: var(--teal);
+}
+
+.library-scroll-limit-ends {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  opacity: 0.85;
+}
+
+.exchange-list.is-scroll-limited {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 0.25rem;
+  border-bottom: 1px solid var(--ink-line);
+  scrollbar-color: rgba(224, 176, 122, 0.45) transparent;
+}
+
 .library-admin {
   display: grid;
   gap: 0.25rem;
