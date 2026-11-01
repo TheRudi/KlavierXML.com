@@ -10,7 +10,7 @@
     />
     <link rel="canonical" href="https://klavierxml.com/exchange.html" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=page1" />
+    <link rel="stylesheet" href="styles.css?v=layout1" />
   </head>
   <body class="page-exchange">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -128,31 +128,30 @@
               spellcheck="false"
             />
           </label>
-        </div>
-
-        <div class="library-scroll-limit">
-          <div class="library-scroll-limit-row">
-            <label class="library-scroll-limit-head" id="library-scroll-label" for="library-scroll-limit">
-              Show 20 songs
-            </label>
-            <p class="library-song-count" id="library-song-count" aria-live="polite">
-              0 songs
-            </p>
+          <div class="library-scroll-limit">
+            <div class="library-scroll-limit-row">
+              <label class="library-scroll-limit-head" id="library-scroll-label" for="library-scroll-limit">
+                Show 20 songs
+              </label>
+              <p class="library-song-count" id="library-song-count" aria-live="polite">
+                0 songs
+              </p>
+            </div>
+            <input
+              id="library-scroll-limit"
+              type="range"
+              min="20"
+              max="1010"
+              step="10"
+              value="20"
+              aria-valuetext="Show 20 songs"
+            />
+            <span class="library-scroll-limit-ends" aria-hidden="true">
+              <span>20</span>
+              <span>1000</span>
+              <span>All</span>
+            </span>
           </div>
-          <input
-            id="library-scroll-limit"
-            type="range"
-            min="20"
-            max="1010"
-            step="10"
-            value="20"
-            aria-valuetext="Show 20 songs"
-          />
-          <span class="library-scroll-limit-ends" aria-hidden="true">
-            <span>20</span>
-            <span>1000</span>
-            <span>All</span>
-          </span>
         </div>
 
         <div class="library-pager" id="library-pager" hidden>
