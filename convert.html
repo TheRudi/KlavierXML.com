@@ -217,29 +217,83 @@
         setProgress(0);
       }
 
-      // Audiveris does not stream % over this request, so ease toward ~92%
-      // over a few minutes, then finish to 100% when the response arrives.
-      function startEstimatedProgress() {
-        const started = Date.now();
-        const halfLifeMs = 55 * 1000;
-        showProgress();
-        progressTimer = setInterval(() => {
-          const elapsed = Date.now() - started;
-          const pct = 92 * (1 - Math.exp(-elapsed / halfLifeMs));
-          setProgress(pct, { indeterminate: true });
-          status.textContent =
-            "Converting with Audiveris… " +
-            formatElapsed(elapsed) +
-            " elapsed. Keep this tab open.";
-        }, 250);
-      }
-
       function finishProgress() {
         if (progressTimer) {
           clearInterval(progressTimer);
           progressTimer = null;
         }
         setProgress(100, { indeterminate: false });
+      }
+
+      function sleep(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+
+      async function readError(response) {
+        const contentType = response.headers.get("content-type") || "";
+        if (contentType.includes("application/json")) {
+          const data = await response.json();
+          if (data && data.error) return data.error;
+        }
+        const text = await response.text();
+        return text || "Conversion failed (" + response.status + ").";
+      }
+
+      async function pollJob(jobId, startedAt) {
+        const deadline = startedAt + 20 * 60 * 1000;
+        while (Date.now() < deadline) {
+          const elapsed = Date.now() - startedAt;
+          const response = await fetch(
+            "api/convert.php?job=" + encodeURIComponent(jobId),
+            { cache: "no-store" }
+          );
+          if (!response.ok) {
+            throw new Error(await readError(response));
+          }
+          const data = await response.json();
+          const pct = typeof data.pct === "number" ? data.pct : 5;
+          setProgress(Math.max(pct, 3), { indeterminate: data.status !== "done" });
+          const msg = data.message || "Converting with Audiveris…";
+          status.textContent = msg + " " + formatElapsed(elapsed) + " elapsed.";
+
+          if (data.status === "done") {
+            return data;
+          }
+          if (data.status === "error") {
+            throw new Error(data.error || "Conversion failed.");
+          }
+          await sleep(2000);
+        }
+        throw new Error(
+          "Conversion is still running after 20 minutes. Try again with a smaller PDF, or contact support."
+        );
+      }
+
+      async function downloadJob(jobId, fallbackName) {
+        const response = await fetch(
+          "api/convert.php?job=" +
+            encodeURIComponent(jobId) +
+            "&download=1",
+          { cache: "no-store" }
+        );
+        if (!response.ok) {
+          throw new Error(await readError(response));
+        }
+        const blob = await response.blob();
+        let downloadName = fallbackName;
+        const disposition = response.headers.get("content-disposition") || "";
+        const match = /filename=\"([^\"]+)\"/i.exec(disposition);
+        if (match) downloadName = match[1];
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = downloadName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        return downloadName;
       }
 
       fileInput.addEventListener("change", () => {
@@ -263,40 +317,32 @@
         if (composer) body.append("composer", composer);
 
         submitBtn.disabled = true;
-        startEstimatedProgress();
+        showProgress();
+        const startedAt = Date.now();
+        status.textContent = "Uploading PDF…";
 
         try {
           const response = await fetch("api/convert.php", {
             method: "POST",
             body,
           });
-
-          const contentType = response.headers.get("content-type") || "";
           if (!response.ok) {
-            let message = "Conversion failed (" + response.status + ").";
-            if (contentType.includes("application/json")) {
-              const data = await response.json();
-              if (data && data.error) message = data.error;
-            } else {
-              message = (await response.text()) || message;
-            }
-            throw new Error(message);
+            throw new Error(await readError(response));
+          }
+          const started = await response.json();
+          if (!started || !started.jobId) {
+            throw new Error("Server did not start a conversion job.");
           }
 
-          const blob = await response.blob();
-          let downloadName = file.name.replace(/\.pdf$/i, "") + ".xml";
-          const disposition = response.headers.get("content-disposition") || "";
-          const match = /filename=\"([^\"]+)\"/i.exec(disposition);
-          if (match) downloadName = match[1];
+          setProgress(started.pct || 5, { indeterminate: true });
+          status.textContent =
+            (started.message || "Converting with Audiveris…") + " 0s elapsed.";
 
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = downloadName;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          URL.revokeObjectURL(url);
+          const done = await pollJob(started.jobId, startedAt);
+          const fallbackName =
+            (done && done.downloadName) ||
+            file.name.replace(/\.pdf$/i, "") + ".xml";
+          const downloadName = await downloadJob(started.jobId, fallbackName);
 
           finishProgress();
           status.textContent =
@@ -305,8 +351,13 @@
             ". Open it in Klavier or share it on the exchange.";
         } catch (err) {
           hideProgress();
-          status.textContent =
+          let message =
             err && err.message ? err.message : "Conversion failed.";
+          if (/failed to fetch/i.test(message)) {
+            message =
+              "Network error while talking to the converter. Check your connection and try again — large scores can take several minutes.";
+          }
+          status.textContent = message;
         } finally {
           submitBtn.disabled = false;
         }

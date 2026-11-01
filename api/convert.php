@@ -6,35 +6,95 @@ declare(strict_types=1);
  *
  * POST multipart/form-data:
  *   pdf: file (required)
- *   title: string (optional)
- *   composer: string (optional)
+ *   title / composer: optional
+ * Returns JSON immediately: { jobId, status: "queued" }, then converts in-process
+ * after fastcgi_finish_request() so the browser can poll without holding one long request.
  *
- * Returns application/vnd.recordare.musicxml+xml (raw MusicXML) on success,
- * or application/json error.
+ * GET ?job=<id>           → JSON status
+ * GET ?job=<id>&download=1 → MusicXML when done
  */
 
 header('X-Content-Type-Options: nosniff');
 header('Cache-Control: no-store');
 
-if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
-  http_response_code(405);
-  header('Content-Type: application/json; charset=utf-8');
-  echo json_encode(['error' => 'POST a PDF file as field "pdf".']);
-  exit;
-}
-
-@set_time_limit(0);
-@ini_set('max_execution_time', '0');
-@ini_set('memory_limit', '512M');
-
 const MAX_PDF_BYTES = 40 * 1024 * 1024; // 40 MB
-const AUDIVERIS_HOME = '/usr/local/klavierxml-audiveris/audiveris';
 const WORK_ROOT = '/Library/WebServer/KlavierXML-data/pdf2xml-work';
-const PDF2XML_BIN = '/usr/local/klavierxml-audiveris/audiveris/bin/pdf2xml.sh';
+const AUDIVERIS_BIN = '/usr/local/klavierxml-audiveris/audiveris/bin/pdf2xml.sh';
 const ENHANCE_PY = '/usr/local/klavierxml-audiveris/enhance_score_pdf.py';
 const PYTHON = '/usr/bin/python3';
+const PYDEPS = '/usr/local/klavierxml-audiveris/pydeps';
+
+@ini_set('memory_limit', '512M');
+
+$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 try {
+  if ($method === 'GET') {
+    handle_get();
+  } elseif ($method === 'POST') {
+    handle_post();
+  } else {
+    http_response_code(405);
+    json_out(['error' => 'Use POST to upload a PDF, or GET ?job=… to poll.']);
+  }
+} catch (Throwable $e) {
+  http_response_code(500);
+  json_out(['error' => $e->getMessage()]);
+}
+
+function handle_get(): void
+{
+  $jobId = trim((string) ($_GET['job'] ?? ''));
+  if ($jobId === '' || !preg_match('/^job-[A-Za-z0-9_-]+$/', $jobId)) {
+    throw new RuntimeException('Missing or invalid job id.');
+  }
+
+  $jobDir = WORK_ROOT . '/' . $jobId;
+  $statusPath = $jobDir . '/status.json';
+  if (!is_dir($jobDir) || !is_file($statusPath)) {
+    http_response_code(404);
+    json_out(['error' => 'Unknown job.', 'jobId' => $jobId]);
+  }
+
+  $status = read_status($statusPath);
+  $wantDownload = isset($_GET['download']) && (string) $_GET['download'] !== '0';
+
+  if ($wantDownload) {
+    if (($status['status'] ?? '') !== 'done') {
+      http_response_code(409);
+      json_out([
+        'error' => 'Conversion is not finished yet.',
+        'jobId' => $jobId,
+        'status' => $status['status'] ?? 'unknown',
+      ]);
+    }
+    $xmlRel = (string) ($status['xml'] ?? '');
+    $xmlPath = $jobDir . '/' . ltrim($xmlRel, '/');
+    if ($xmlRel === '' || !is_file($xmlPath)) {
+      throw new RuntimeException('MusicXML missing for completed job.');
+    }
+    $downloadName = (string) ($status['downloadName'] ?? basename($xmlPath));
+    header('Content-Type: application/vnd.recordare.musicxml+xml; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $downloadName . '"');
+    header('X-KlavierXML-Job: ' . $jobId);
+    header('Content-Length: ' . (string) filesize($xmlPath));
+    readfile($xmlPath);
+    exit;
+  }
+
+  json_out([
+    'jobId' => $jobId,
+    'status' => $status['status'] ?? 'unknown',
+    'pct' => (int) ($status['pct'] ?? 0),
+    'message' => (string) ($status['message'] ?? ''),
+    'error' => $status['error'] ?? null,
+    'downloadName' => $status['downloadName'] ?? null,
+    'updatedAt' => $status['updatedAt'] ?? null,
+  ]);
+}
+
+function handle_post(): void
+{
   if (!isset($_FILES['pdf']) || !is_array($_FILES['pdf'])) {
     throw new RuntimeException('Missing PDF upload (field name: pdf).');
   }
@@ -74,77 +134,196 @@ try {
     throw new RuntimeException('Could not store uploaded PDF.');
   }
 
-  $pdfForOmr = $inputPdf;
-  $enhanced = $jobDir . '/enhanced.pdf';
-  if (is_file(ENHANCE_PY) && is_executable(PYTHON)) {
-    $pyDeps = '/usr/local/klavierxml-audiveris/pydeps';
-    $envPrefix = 'PYTHONPATH=' . escapeshellarg($pyDeps) . ' ';
-    $cmd = $envPrefix . escapeshellarg(PYTHON) . ' ' . escapeshellarg(ENHANCE_PY) . ' '
-      . escapeshellarg($inputPdf) . ' ' . escapeshellarg($enhanced) . ' 2>&1';
-    exec($cmd, $enhOut, $enhCode);
-    if ($enhCode === 0 && is_file($enhanced) && filesize($enhanced) > 0) {
-      $pdfForOmr = $enhanced;
-    }
-  }
+  $meta = [
+    'jobId' => $jobId,
+    'pdf' => basename($inputPdf),
+    'safeBase' => $safeBase,
+    'title' => $title,
+    'composer' => $composer,
+    'origName' => $origName,
+    'createdAt' => gmdate('c'),
+  ];
+  file_put_contents($jobDir . '/meta.json', json_encode($meta, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+  write_status($jobDir, [
+    'status' => 'queued',
+    'pct' => 2,
+    'message' => 'Upload received. Starting Audiveris…',
+    'error' => null,
+    'downloadName' => $safeBase . '.xml',
+  ]);
 
-  $outDir = $jobDir . '/out';
-  mkdir($outDir, 0775, true);
-  if (!is_file(PDF2XML_BIN)) {
-    throw new RuntimeException('Audiveris converter is not installed on the server.');
-  }
+  // Return immediately so the browser can poll; conversion continues below.
+  ignore_user_abort(true);
+  @set_time_limit(0);
+  @ini_set('max_execution_time', '0');
 
-  $logFile = $jobDir . '/audiveris.log';
-  $cmd = escapeshellarg(PDF2XML_BIN) . ' '
-    . escapeshellarg($pdfForOmr) . ' '
-    . escapeshellarg($outDir)
-    . ' > ' . escapeshellarg($logFile) . ' 2>&1';
-  exec($cmd, $omrOut, $omrCode);
-
-  $xmlPath = find_best_musicxml($outDir, $safeBase);
-  if ($xmlPath === null) {
-    // Retry export from .omr if present (invalid cover pages)
-    $omr = find_first($outDir, 'omr');
-    if ($omr !== null) {
-      $retryLog = $jobDir . '/audiveris-retry.log';
-      $cmd = escapeshellarg(PDF2XML_BIN) . ' '
-        . escapeshellarg($omr) . ' '
-        . escapeshellarg($outDir)
-        . ' > ' . escapeshellarg($retryLog) . ' 2>&1';
-      exec($cmd, $retryOut, $retryCode);
-      $xmlPath = find_best_musicxml($outDir, $safeBase);
-    }
-  }
-
-  if ($xmlPath === null) {
-    $tail = '';
-    if (is_file($logFile)) {
-      $tail = trim((string) shell_exec('tail -n 40 ' . escapeshellarg($logFile)));
-    }
-    throw new RuntimeException(
-      'Conversion finished but no MusicXML was produced.'
-      . ($tail !== '' ? "\n\nAudiveris log:\n" . $tail : '')
-    );
-  }
-
-  $xml = (string) file_get_contents($xmlPath);
-  if ($xml === '') {
-    throw new RuntimeException('MusicXML file was empty.');
-  }
-
-  if ($title !== '' || $composer !== '') {
-    $xml = patch_musicxml_metadata($xml, $title, $composer);
-  }
-
-  $downloadName = $safeBase . '.xml';
-  header('Content-Type: application/vnd.recordare.musicxml+xml; charset=utf-8');
-  header('Content-Disposition: attachment; filename="' . $downloadName . '"');
-  header('X-KlavierXML-Job: ' . $jobId);
-  echo $xml;
-  exit;
-} catch (Throwable $e) {
-  http_response_code(500);
   header('Content-Type: application/json; charset=utf-8');
-  echo json_encode(['error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+  echo json_encode([
+    'jobId' => $jobId,
+    'status' => 'queued',
+    'pct' => 2,
+    'message' => 'Upload received. Converting in the background…',
+  ], JSON_UNESCAPED_UNICODE);
+
+  if (function_exists('fastcgi_finish_request')) {
+    fastcgi_finish_request();
+  } else {
+    if (function_exists('ob_get_level')) {
+      while (ob_get_level() > 0) {
+        ob_end_flush();
+      }
+    }
+    flush();
+  }
+
+  run_conversion_job($jobDir, $meta);
+  exit;
+}
+
+function run_conversion_job(string $jobDir, array $meta): void
+{
+  $safeBase = (string) ($meta['safeBase'] ?? 'score');
+  $pdfName = (string) ($meta['pdf'] ?? ($safeBase . '.pdf'));
+  $inputPdf = $jobDir . '/' . $pdfName;
+  $title = trim((string) ($meta['title'] ?? ''));
+  $composer = trim((string) ($meta['composer'] ?? ''));
+
+  try {
+    if (!is_file($inputPdf)) {
+      throw new RuntimeException('Uploaded PDF missing.');
+    }
+
+    write_status($jobDir, [
+      'status' => 'running',
+      'pct' => 8,
+      'message' => 'Preparing score image…',
+      'error' => null,
+      'downloadName' => $safeBase . '.xml',
+    ]);
+
+    $pdfForOmr = $inputPdf;
+    $enhanced = $jobDir . '/enhanced.pdf';
+    if (is_file(ENHANCE_PY) && is_executable(PYTHON)) {
+      $cmd = 'PYTHONPATH=' . escapeshellarg(PYDEPS) . ' '
+        . escapeshellarg(PYTHON) . ' ' . escapeshellarg(ENHANCE_PY) . ' '
+        . escapeshellarg($inputPdf) . ' ' . escapeshellarg($enhanced);
+      exec($cmd . ' 2>&1', $enhOut, $enhCode);
+      if ($enhCode === 0 && is_file($enhanced) && filesize($enhanced) > 0) {
+        $pdfForOmr = $enhanced;
+      }
+    }
+
+    write_status($jobDir, [
+      'status' => 'running',
+      'pct' => 18,
+      'message' => 'Running Audiveris (this can take several minutes)…',
+      'error' => null,
+      'downloadName' => $safeBase . '.xml',
+    ]);
+
+    $outDir = $jobDir . '/out';
+    if (!is_dir($outDir) && !mkdir($outDir, 0775, true) && !is_dir($outDir)) {
+      throw new RuntimeException('Cannot create output directory.');
+    }
+    if (!is_file(AUDIVERIS_BIN)) {
+      throw new RuntimeException('Audiveris converter is not installed.');
+    }
+
+    $logFile = $jobDir . '/audiveris.log';
+    $cmd = escapeshellarg(AUDIVERIS_BIN) . ' '
+      . escapeshellarg($pdfForOmr) . ' '
+      . escapeshellarg($outDir)
+      . ' > ' . escapeshellarg($logFile) . ' 2>&1';
+    exec($cmd, $omrOut, $omrCode);
+
+    write_status($jobDir, [
+      'status' => 'running',
+      'pct' => 88,
+      'message' => 'Exporting MusicXML…',
+      'error' => null,
+      'downloadName' => $safeBase . '.xml',
+    ]);
+
+    $xmlPath = find_best_musicxml($outDir, $safeBase);
+    if ($xmlPath === null) {
+      $omr = find_first($outDir, 'omr');
+      if ($omr !== null) {
+        $retryLog = $jobDir . '/audiveris-retry.log';
+        $cmd = escapeshellarg(AUDIVERIS_BIN) . ' '
+          . escapeshellarg($omr) . ' '
+          . escapeshellarg($outDir)
+          . ' > ' . escapeshellarg($retryLog) . ' 2>&1';
+        exec($cmd, $retryOut, $retryCode);
+        $xmlPath = find_best_musicxml($outDir, $safeBase);
+      }
+    }
+
+    if ($xmlPath === null) {
+      $tail = '';
+      if (is_file($logFile)) {
+        $tail = trim((string) shell_exec('tail -n 40 ' . escapeshellarg($logFile)));
+      }
+      throw new RuntimeException(
+        'Conversion finished but no MusicXML was produced.'
+        . ($tail !== '' ? "\n\nAudiveris log:\n" . $tail : '')
+      );
+    }
+
+    $xml = (string) file_get_contents($xmlPath);
+    if ($xml === '') {
+      throw new RuntimeException('MusicXML file was empty.');
+    }
+
+    if ($title !== '' || $composer !== '') {
+      $xml = patch_musicxml_metadata($xml, $title, $composer);
+      file_put_contents($xmlPath, $xml);
+    }
+
+    $finalName = $safeBase . '.xml';
+    $finalPath = $jobDir . '/' . $finalName;
+    if (!is_file($finalPath) || realpath($xmlPath) !== realpath($finalPath)) {
+      copy($xmlPath, $finalPath);
+    }
+
+    write_status($jobDir, [
+      'status' => 'done',
+      'pct' => 100,
+      'message' => 'Done.',
+      'error' => null,
+      'downloadName' => $finalName,
+      'xml' => $finalName,
+    ]);
+  } catch (Throwable $e) {
+    write_status($jobDir, [
+      'status' => 'error',
+      'pct' => 0,
+      'message' => 'Conversion failed.',
+      'error' => $e->getMessage(),
+      'downloadName' => null,
+    ]);
+  }
+}
+
+function read_status(string $path): array
+{
+  $raw = (string) file_get_contents($path);
+  $data = json_decode($raw, true);
+  return is_array($data) ? $data : [];
+}
+
+function write_status(string $jobDir, array $status): void
+{
+  $status['updatedAt'] = gmdate('c');
+  file_put_contents(
+    $jobDir . '/status.json',
+    json_encode($status, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)
+  );
+}
+
+function json_out(array $payload): void
+{
+  header('Content-Type: application/json; charset=utf-8');
+  echo json_encode($payload, JSON_UNESCAPED_UNICODE);
   exit;
 }
 
