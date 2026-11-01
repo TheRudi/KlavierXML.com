@@ -17,6 +17,8 @@
   const titleInput = document.getElementById("score-title");
   const composerInput = document.getElementById("score-composer");
   const rightsInput = document.getElementById("upload-rights");
+  const uploadSubmitBtn = document.getElementById("upload-submit");
+  const uploadMultiBtn = document.getElementById("upload-multi");
   const searchInput = document.getElementById("library-search");
   const composerSelect = document.getElementById("library-composer");
   const scrollLimitInput = document.getElementById("library-scroll-limit");
@@ -1225,6 +1227,31 @@
       reader.readAsArrayBuffer(file);
     });
 
+  const selectedFiles = () => [...(fileInput?.files || [])];
+
+  const syncUploadButtonLabel = (count = selectedFiles().length) => {
+    if (!uploadSubmitBtn) return;
+    uploadSubmitBtn.textContent =
+      count > 1 ? `Upload ${count} scores` : "Upload score";
+  };
+
+  const guessMetadataForFile = async (file) => {
+    const fromName = metaFromFilename(file.name);
+    const ext = extensionOf(file.name);
+    if (!ALLOWED.has(ext)) return fromName;
+    try {
+      const buffer = await readFile(file);
+      const xmlText = await xmlTextFromUpload(file, buffer);
+      const fromXml = extractScoreMetadata(xmlText);
+      return {
+        title: fromXml.title || fromName.title,
+        composer: fromXml.composer || fromName.composer,
+      };
+    } catch (_) {
+      return fromName;
+    }
+  };
+
   const applyGuessedMetadata = (title, composer) => {
     const guessedTitle = String(title || "").trim();
     const guessedComposer = String(composer || "").trim();
@@ -1251,77 +1278,125 @@
     render();
   };
 
-  fileInput?.addEventListener("change", async () => {
-    const file = fileInput.files?.[0];
-    fileNameEl.textContent = file ? file.name : "No file chosen";
-    if (!file) return;
+  const cachePublishedLocally = async (record) => {
+    localScores = await loadLocal();
+    if (localScores.length >= MAX_FILES) {
+      const oldest = [...localScores].sort((a, b) =>
+        String(a.added).localeCompare(String(b.added))
+      )[0];
+      if (oldest) await deleteLocal(oldest.id);
+    }
+    await saveLocal(record);
+    localScores = await loadLocal();
+  };
 
-    const fromName = metaFromFilename(file.name);
+  const uploadOneScore = async (file, title, composer, progressLabel) => {
     const ext = extensionOf(file.name);
     if (!ALLOWED.has(ext)) {
-      applyGuessedMetadata(fromName.title, fromName.composer);
+      throw new Error(`${file.name}: only .xml, .musicxml, and .mxl are accepted.`);
+    }
+    if (ext === "mxl" && file.size > MAX_MXL_BYTES) {
+      throw new Error(`${file.name}: MXL larger than 100 KB.`);
+    }
+    if ((ext === "xml" || ext === "musicxml") && file.size > MAX_XML_BYTES) {
+      throw new Error(`${file.name}: XML larger than 1 GB.`);
+    }
+
+    const safeTitle = String(title || "").trim();
+    const safeComposer = String(composer || "").trim();
+    if (safeTitle.length < 2 || safeComposer.length < 2) {
+      throw new Error(
+        `${file.name}: could not determine title and composer (need at least 2 characters each).`
+      );
+    }
+
+    if (progressLabel) setStatus(progressLabel);
+    const buffer = await readFile(file);
+    const prepared = await prepareScoreFile(
+      file,
+      ext,
+      buffer,
+      safeTitle,
+      safeComposer
+    );
+    const id = `shared-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const record = {
+      id,
+      title: safeTitle,
+      composer: safeComposer,
+      credit: prepared.converted
+        ? "Converted to MXL · shared exchange"
+        : "Shared exchange",
+      filename: prepared.filename.endsWith(".mxl")
+        ? prepared.filename
+        : `${stemFromFile(prepared.filename)}.mxl`,
+      format: "mxl",
+      bytes: prepared.bytes,
+      blob: prepared.blob,
+      added: new Date().toISOString().slice(0, 10),
+      license:
+        "Uploaded by a community member. Only share files you have rights to distribute.",
+    };
+
+    setStatus(
+      progressLabel
+        ? progressLabel.replace(/Uploading|Converting/, "Publishing")
+        : "Publishing for everyone…"
+    );
+    const publishedShared = await publishSharedScore(record, prepared.blob);
+    if (!publishedShared) {
+      throw new Error(`${file.name}: could not publish. Try again.`);
+    }
+    await cachePublishedLocally(record);
+    return { record, converted: prepared.converted };
+  };
+
+  fileInput?.addEventListener("change", async () => {
+    const files = selectedFiles();
+    syncUploadButtonLabel(files.length);
+    if (!files.length) {
+      fileNameEl.textContent = "No file chosen";
       return;
     }
 
-    // 1) MusicXML work-title / creator  2) Composer-Title filename
-    try {
-      const buffer = await readFile(file);
-      const xmlText = await xmlTextFromUpload(file, buffer);
-      const fromXml = extractScoreMetadata(xmlText);
-      applyGuessedMetadata(
-        fromXml.title || fromName.title,
-        fromXml.composer || fromName.composer
-      );
-    } catch (_) {
-      applyGuessedMetadata(fromName.title, fromName.composer);
+    if (files.length === 1) {
+      fileNameEl.textContent = files[0].name;
+      const meta = await guessMetadataForFile(files[0]);
+      applyGuessedMetadata(meta.title, meta.composer);
+      return;
     }
+
+    fileNameEl.textContent = `${files.length} files chosen`;
+    titleInput.value = "";
+    composerInput.value = "";
+    // Preview library matches for the first file.
+    const firstMeta = await guessMetadataForFile(files[0]);
+    applyGuessedMetadata(firstMeta.title, firstMeta.composer);
+    titleInput.value = "";
+    composerInput.value = "";
+    setStatus(
+      `${files.length} scores selected. Title and composer are taken from each file.`
+    );
+  });
+
+  uploadMultiBtn?.addEventListener("click", () => {
+    if (!fileInput) return;
+    fileInput.value = "";
+    fileInput.click();
   });
 
   form.addEventListener("reset", () => {
     window.setTimeout(() => {
       fileNameEl.textContent = "No file chosen";
+      syncUploadButtonLabel(0);
     }, 0);
   });
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const file = fileInput.files?.[0];
-    if (!file) {
+    const files = selectedFiles();
+    if (!files.length) {
       setStatus("Choose an XML or MXL file first.", "error");
-      return;
-    }
-
-    const ext = extensionOf(file.name);
-    if (!ALLOWED.has(ext)) {
-      setStatus("Only .xml, .musicxml, and .mxl files are accepted.", "error");
-      return;
-    }
-    if (ext === "mxl" && file.size > MAX_MXL_BYTES) {
-      setStatus("That MXL file is larger than 100 KB.", "error");
-      return;
-    }
-    if ((ext === "xml" || ext === "musicxml") && file.size > MAX_XML_BYTES) {
-      setStatus("That XML file is larger than 1 GB.", "error");
-      return;
-    }
-    if (sharedScores.length >= MAX_FILES) {
-      setStatus(
-        `The shared library already has ${MAX_FILES} scores. Remove one before uploading another.`,
-        "error"
-      );
-      return;
-    }
-
-    const title = (titleInput.value || "").trim();
-    const composer = (composerInput.value || "").trim();
-    if (title.length < 2) {
-      setStatus("Title must be at least 2 characters.", "error");
-      titleInput.focus();
-      return;
-    }
-    if (composer.length < 2) {
-      setStatus("Composer must be at least 2 characters.", "error");
-      composerInput.focus();
       return;
     }
     if (!rightsInput?.checked) {
@@ -1330,60 +1405,93 @@
       return;
     }
 
-    try {
-      setStatus(ext === "mxl" ? "Uploading…" : "Converting XML to MXL…");
-      const buffer = await readFile(file);
-      const prepared = await prepareScoreFile(
-        file,
-        ext,
-        buffer,
-        title,
-        composer
+    const remainingSlots = MAX_FILES - sharedScores.length;
+    if (remainingSlots <= 0) {
+      setStatus(
+        `The shared library already has ${MAX_FILES} scores. Remove one before uploading another.`,
+        "error"
       );
-      const id = `shared-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const record = {
-        id,
-        title,
-        composer,
-        credit: prepared.converted
-          ? "Converted to MXL · shared exchange"
-          : "Shared exchange",
-        filename: prepared.filename.endsWith(".mxl")
-          ? prepared.filename
-          : `${stemFromFile(prepared.filename)}.mxl`,
-        format: "mxl",
-        bytes: prepared.bytes,
-        blob: prepared.blob,
-        added: new Date().toISOString().slice(0, 10),
-        license:
-          "Uploaded by a community member. Only share files you have rights to distribute.",
-      };
+      return;
+    }
+    if (files.length > remainingSlots) {
+      setStatus(
+        `Only ${remainingSlots} more score${remainingSlots === 1 ? "" : "s"} can be added (max ${MAX_FILES}).`,
+        "error"
+      );
+      return;
+    }
 
-      setStatus("Publishing for everyone…");
-      const publishedShared = await publishSharedScore(record, prepared.blob);
-      if (!publishedShared) {
-        throw new Error("Could not publish this score for everyone. Try again.");
+    const multi = files.length > 1;
+    const formTitle = (titleInput.value || "").trim();
+    const formComposer = (composerInput.value || "").trim();
+
+    if (!multi) {
+      if (formTitle.length < 2) {
+        setStatus("Title must be at least 2 characters.", "error");
+        titleInput.focus();
+        return;
+      }
+      if (formComposer.length < 2) {
+        setStatus("Composer must be at least 2 characters.", "error");
+        composerInput.focus();
+        return;
+      }
+    }
+
+    let ok = 0;
+    let convertedCount = 0;
+    const failures = [];
+
+    try {
+      for (let i = 0; i < files.length; i += 1) {
+        const file = files[i];
+        const progress = multi
+          ? `Uploading ${i + 1} of ${files.length}: ${file.name}`
+          : extensionOf(file.name) === "mxl"
+            ? "Uploading…"
+            : "Converting XML to MXL…";
+        try {
+          let title = formTitle;
+          let composer = formComposer;
+          if (multi || title.length < 2 || composer.length < 2) {
+            const meta = await guessMetadataForFile(file);
+            title = multi ? meta.title : title || meta.title;
+            composer = multi ? meta.composer : composer || meta.composer;
+          }
+          const result = await uploadOneScore(file, title, composer, progress);
+          ok += 1;
+          if (result.converted) convertedCount += 1;
+          await loadShared().catch(() => {});
+          render();
+        } catch (err) {
+          failures.push(err.message || String(err));
+          if (!multi) throw err;
+        }
       }
 
-      // Local cache only — the visible library is always the shared catalog.
-      localScores = await loadLocal();
-      if (localScores.length >= MAX_FILES) {
-        const oldest = [...localScores].sort((a, b) =>
-          String(a.added).localeCompare(String(b.added))
-        )[0];
-        if (oldest) await deleteLocal(oldest.id);
-      }
-      await saveLocal(record);
-      localScores = await loadLocal();
-      await loadShared().catch(() => {});
-
-      render();
       form.reset();
       fileNameEl.textContent = "No file chosen";
-      const convertedNote = prepared.converted ? " Converted to MXL." : "";
-      setStatus(
-        `Published for everyone. Anyone can download it below.${convertedNote}`
-      );
+      syncUploadButtonLabel(0);
+      await loadShared().catch(() => {});
+      render();
+
+      if (multi) {
+        const failNote = failures.length
+          ? ` ${failures.length} failed: ${failures.slice(0, 3).join(" · ")}`
+          : "";
+        const convertedNote = convertedCount
+          ? ` ${convertedCount} converted to MXL.`
+          : "";
+        setStatus(
+          `Published ${ok} of ${files.length} scores.${convertedNote}${failNote}`,
+          failures.length ? "error" : ""
+        );
+      } else {
+        const convertedNote = convertedCount ? " Converted to MXL." : "";
+        setStatus(
+          `Published for everyone. Anyone can download it below.${convertedNote}`
+        );
+      }
     } catch (err) {
       setStatus(err.message || "Upload failed.", "error");
     }

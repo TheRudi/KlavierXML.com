@@ -51,16 +51,17 @@
 
         <form class="upload-form" id="upload-form">
           <label class="file-picker" for="score-file">
-            <span class="file-picker-label">Score file</span>
+            <span class="file-picker-label">Score file(s)</span>
             <input
               id="score-file"
               name="score"
               type="file"
               accept=".xml,.musicxml,.mxl,.zip,text/xml,application/xml,application/zip,application/x-zip-compressed,application/octet-stream,application/vnd.recordare.musicxml,application/vnd.recordare.musicxml+xml"
+              multiple
               required
             />
             <span class="file-picker-hint"
-              >Browse Files for a .xml, .musicxml, or .mxl score · XML → MXL ·
+              >Choose one or many .xml, .musicxml, or .mxl scores · XML → MXL ·
               XML max 1&nbsp;GB · MXL max 100&nbsp;KB · max 100 shared files</span
             >
             <span class="file-picker-name" id="file-name">No file chosen</span>
@@ -73,10 +74,9 @@
                 id="score-title"
                 name="title"
                 type="text"
-                required
                 minlength="2"
                 maxlength="120"
-                placeholder="e.g. Minuet in G"
+                placeholder="e.g. Minuet in G · auto for multi-upload"
                 autocomplete="off"
               />
             </label>
@@ -86,10 +86,9 @@
                 id="score-composer"
                 name="composer"
                 type="text"
-                required
                 minlength="2"
                 maxlength="160"
-                placeholder="e.g. J.S. Bach"
+                placeholder="e.g. J.S. Bach · auto for multi-upload"
                 autocomplete="off"
               />
             </label>
@@ -106,7 +105,12 @@
           </label>
 
           <div class="cta-row">
-            <button class="btn btn-primary" type="submit">Upload score</button>
+            <button class="btn btn-primary" type="submit" id="upload-submit">
+              Upload score
+            </button>
+            <button class="btn btn-ghost" type="button" id="upload-multi">
+              Choose multiple scores
+            </button>
             <button class="btn btn-ghost" type="reset">Clear</button>
           </div>
           <p class="upload-status" id="upload-status" role="status"></p>
@@ -270,6 +274,6 @@
     <script src="app.js?v=viewer1" defer></script>
     <script src="exchange-config.js?v=preview2" defer></script>
     <script src="player.js?v=preview2" defer></script>
-    <script src="exchange.js?v=total1" defer></script>
+    <script src="exchange.js?v=multi1" defer></script>
   </body>
 </html>
