@@ -17,6 +17,7 @@
   const titleInput = document.getElementById("score-title");
   const composerInput = document.getElementById("score-composer");
   const searchInput = document.getElementById("library-search");
+  const composerSelect = document.getElementById("library-composer");
   const countEl = document.getElementById("library-count");
   const adminPasswordInput = document.getElementById("admin-password");
   const viewerEl = document.getElementById("score-viewer");
@@ -32,10 +33,20 @@
   let builtin = [];
   let sharedScores = [];
   let localScores = [];
-  let query = "";
+  let titleQuery = "";
+  let composerFilter = "";
   let supabaseClient = null;
   let osmd = null;
   let viewerRequestId = 0;
+
+  /** Fold accents/umlauts/diaeresis/cedilla so "fur" matches "für", "Noel" matches "Noël". */
+  const foldText = (text) =>
+    String(text || "")
+      .normalize("NFD")
+      .replace(/\p{M}/gu, "")
+      .replace(/ß/g, "ss")
+      .replace(/ẞ/g, "ss")
+      .toLowerCase();
 
   const canShowRemove = () =>
     String(adminPasswordInput?.value || "") === REMOVE_PASSWORD;
@@ -351,13 +362,7 @@
     countEl.textContent = `${total} score${total === 1 ? "" : "s"} · max ${MAX_FILES}`;
   };
 
-  const matchesQuery = (item) => {
-    if (!query) return true;
-    const hay = `${item.title} ${item.composer} ${item.credit || ""}`.toLowerCase();
-    return hay.includes(query);
-  };
-
-  const visibleItems = () => {
+  const catalogItems = () => {
     // Same library on every browser/device: shared catalog + built-ins only.
     // Per-browser IndexedDB copies are a download cache, not a separate list.
     const items = [
@@ -369,8 +374,64 @@
       const key = item.id || `${item.source}-${item.title}-${item.file || item.filename}`;
       if (seen.has(key)) return false;
       seen.add(key);
-      return matchesQuery(item);
+      return true;
     });
+  };
+
+  const matchesFilters = (item) => {
+    if (composerFilter) {
+      if (foldText(item.composer) !== foldText(composerFilter)) return false;
+    }
+    if (titleQuery) {
+      if (!foldText(item.title).includes(titleQuery)) return false;
+    }
+    return true;
+  };
+
+  const visibleItems = () => catalogItems().filter(matchesFilters);
+
+  const uniqueComposers = () => {
+    const byFold = new Map();
+    catalogItems().forEach((item) => {
+      const name = String(item.composer || "").trim();
+      if (!name) return;
+      const key = foldText(name);
+      if (!byFold.has(key)) byFold.set(key, name);
+    });
+    return [...byFold.values()].sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: "base" })
+    );
+  };
+
+  const refreshComposerList = () => {
+    if (!composerSelect) return;
+    const previous = composerSelect.value;
+    const composers = uniqueComposers();
+    const signature = composers.join("\0");
+    if (composerSelect.dataset.signature === signature) {
+      composerFilter = composerSelect.value;
+      return;
+    }
+    composerSelect.dataset.signature = signature;
+    composerSelect.innerHTML = "";
+
+    const allOpt = document.createElement("option");
+    allOpt.value = "";
+    allOpt.textContent = "All composers";
+    composerSelect.append(allOpt);
+
+    composers.forEach((name) => {
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      composerSelect.append(opt);
+    });
+
+    const stillThere = [...composerSelect.options].some(
+      (opt) => opt.value === previous
+    );
+    composerSelect.value = stillThere ? previous : "";
+    composerFilter = composerSelect.value;
   };
 
   const downloadBlob = (blob, filename) => {
@@ -836,6 +897,7 @@
   };
 
   const render = () => {
+    refreshComposerList();
     const items = visibleItems();
     listEl.innerHTML = "";
     emptyEl.hidden = items.length > 0;
@@ -1087,7 +1149,12 @@
   });
 
   searchInput?.addEventListener("input", () => {
-    query = searchInput.value.trim().toLowerCase();
+    titleQuery = foldText(searchInput.value.trim());
+    render();
+  });
+
+  composerSelect?.addEventListener("change", () => {
+    composerFilter = composerSelect.value;
     render();
   });
 
