@@ -475,101 +475,6 @@
     editTitleInput.focus();
   };
 
-  const updateSharedScore = async (item, title, composer) => {
-    requireSharedBackend();
-    if (!usesPhpApi()) {
-      throw new Error("Editing scores requires the PHP exchange backend.");
-    }
-    const blob = await fetchSharedBlob(item);
-    const buffer = await blob.arrayBuffer();
-    if (!window.KlavierPlayer?.unzipXml) {
-      throw new Error("Score reader is not ready yet. Try again in a moment.");
-    }
-    const xmlText = await window.KlavierPlayer.unzipXml(buffer);
-    const updatedXml = replaceXmlMetadata(xmlText, title, composer);
-    const archive = await buildMxlArchive(updatedXml);
-    if (archive.length > MAX_MXL_BYTES) {
-      throw new Error("Updated MXL is larger than 100 KB.");
-    }
-    const filename = buildScoreFilename(composer, title);
-    const outBlob = new Blob([archive], {
-      type: "application/vnd.recordare.musicxml",
-    });
-
-    const formData = new FormData();
-    formData.append("action", "update");
-    formData.append("id", item.id);
-    formData.append("title", title);
-    formData.append("composer", composer);
-    formData.append("filename", filename);
-    formData.append("file", outBlob, filename);
-
-    const res = await fetch(`${getApiBase()}/exchange.php`, {
-      method: "POST",
-      headers: {
-        "X-Admin-Password": String(adminPasswordInput?.value || ""),
-      },
-      body: formData,
-    });
-    const body = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      throw new Error(body.error || "Could not update that score.");
-    }
-
-    const updated = body.score ? rowToScore(body.score) : {
-      ...item,
-      title,
-      composer,
-      filename,
-      bytes: archive.length,
-      format: "mxl",
-    };
-    sharedScores = sharedScores.map((score) =>
-      score.id === item.id ? { ...score, ...updated, source: "shared" } : score
-    );
-    blobCache.delete(`shared:${item.id}`);
-    try {
-      await deleteLocal(item.id);
-    } catch (_) {
-      /* ignore */
-    }
-    return updated;
-  };
-
-  const saveEditedScore = async () => {
-    if (!editingItem) return;
-    const title = String(editTitleInput?.value || "").trim();
-    const composer = String(editComposerInput?.value || "").trim();
-    if (title.length < 2) {
-      setEditStatus("Title must be at least 2 characters.", "error");
-      editTitleInput?.focus();
-      return;
-    }
-    if (composer.length < 2) {
-      setEditStatus("Composer must be at least 2 characters.", "error");
-      editComposerInput?.focus();
-      return;
-    }
-    if (!canShowRemove()) {
-      setEditStatus("Admin password required.", "error");
-      return;
-    }
-
-    try {
-      setEditStatus("Updating score file and listing…");
-      if (editSaveBtn) editSaveBtn.disabled = true;
-      await updateSharedScore(editingItem, title, composer);
-      closeEditDialog();
-      await loadShared().catch(() => {});
-      render();
-      setStatus("Updated title, composer, MusicXML metadata, and filename.");
-    } catch (err) {
-      setEditStatus(err.message || "Could not update that score.", "error");
-    } finally {
-      if (editSaveBtn) editSaveBtn.disabled = false;
-    }
-  };
-
   const removeScore = async (item) => {
     const label = item.title || "this score";
     const ok = await askYesNo(
@@ -1142,6 +1047,259 @@
     }
 
     return serializeMusicXml(doc, xmlText);
+  };
+
+  const assertValidMusicXml = (xmlText, label = "MusicXML") => {
+    const text = String(xmlText || "").replace(/^\uFEFF/, "").trim();
+    if (!text) throw new Error(`${label} is empty.`);
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, "application/xml");
+    if (doc.querySelector("parsererror")) {
+      throw new Error(`${label} is not well-formed XML.`);
+    }
+    const root =
+      doc.getElementsByTagName("score-partwise")[0] ||
+      doc.getElementsByTagName("score-timewise")[0];
+    if (!root) {
+      throw new Error(
+        `${label} is not a valid MusicXML score (missing score-partwise/score-timewise).`
+      );
+    }
+    return text;
+  };
+
+  const newSharedId = () =>
+    `shared-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  /** Download MXL with no cache, unzip → edit metadata → re-zip → verify. */
+  const rebuildEditedMxl = async (item, title, composer) => {
+    if (!window.KlavierPlayer?.unzipXml) {
+      throw new Error("Score reader is not ready yet. Try again in a moment.");
+    }
+
+    const res = await fetch(
+      `${getApiBase()}/file.php?id=${encodeURIComponent(item.id)}`,
+      { cache: "no-store" }
+    );
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(text || `Could not download score (${res.status}).`);
+    }
+    const buffer = await res.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    if (bytes.length < 4 || bytes[0] !== 0x50 || bytes[1] !== 0x4b) {
+      throw new Error("Stored file is not a valid MXL (ZIP) archive.");
+    }
+
+    const originalXml = assertValidMusicXml(
+      await window.KlavierPlayer.unzipXml(buffer),
+      "Stored score"
+    );
+    const updatedXml = assertValidMusicXml(
+      replaceXmlMetadata(originalXml, title, composer),
+      "Edited score"
+    );
+
+    const meta = extractScoreMetadata(updatedXml);
+    if (foldText(meta.title) !== foldText(title)) {
+      throw new Error("Edited MusicXML title did not save correctly.");
+    }
+    if (foldText(meta.composer) !== foldText(composer)) {
+      throw new Error("Edited MusicXML composer did not save correctly.");
+    }
+
+    const archive = await buildMxlArchive(updatedXml);
+    if (archive.length > MAX_MXL_BYTES) {
+      throw new Error("Updated MXL is larger than 100 KB.");
+    }
+
+    // Round-trip: unzip the new archive and confirm it is still valid MusicXML.
+    const archiveBuffer = archive.buffer.slice(
+      archive.byteOffset,
+      archive.byteOffset + archive.byteLength
+    );
+    const verifiedXml = assertValidMusicXml(
+      await window.KlavierPlayer.unzipXml(archiveBuffer),
+      "Re-zipped score"
+    );
+    const verifiedMeta = extractScoreMetadata(verifiedXml);
+    if (foldText(verifiedMeta.title) !== foldText(title)) {
+      throw new Error("Re-zipped MXL title check failed.");
+    }
+    if (foldText(verifiedMeta.composer) !== foldText(composer)) {
+      throw new Error("Re-zipped MXL composer check failed.");
+    }
+
+    return {
+      archive,
+      filename: buildScoreFilename(composer, title),
+      blob: new Blob([archive], {
+        type: "application/vnd.recordare.musicxml",
+      }),
+    };
+  };
+
+  const adminDeleteScore = async (id, password) => {
+    const res = await fetch(
+      `${getApiBase()}/exchange.php?id=${encodeURIComponent(id)}&password=${encodeURIComponent(password)}`,
+      { method: "DELETE" }
+    );
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(body.error || "Could not remove the previous score file.");
+    }
+  };
+
+  const updateSharedScore = async (item, title, composer) => {
+    requireSharedBackend();
+    if (!usesPhpApi()) {
+      throw new Error("Editing scores requires the PHP exchange backend.");
+    }
+
+    const rebuilt = await rebuildEditedMxl(item, title, composer);
+    const password = String(adminPasswordInput?.value || "");
+    const atCapacity = sharedScores.length >= MAX_FILES;
+
+    // Prefer a brand-new unique id for the changed file. If the library is full,
+    // update the existing id in place so we do not exceed max_files.
+    if (atCapacity) {
+      const formData = new FormData();
+      formData.append("action", "update");
+      formData.append("id", item.id);
+      formData.append("title", title);
+      formData.append("composer", composer);
+      formData.append("filename", rebuilt.filename);
+      formData.append("password", password);
+      formData.append("file", rebuilt.blob, rebuilt.filename);
+
+      const res = await fetch(`${getApiBase()}/exchange.php`, {
+        method: "POST",
+        body: formData,
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body.error || "Could not save the edited score.");
+      }
+
+      blobCache.delete(`shared:${item.id}`);
+      try {
+        await deleteLocal(item.id);
+      } catch (_) {
+        /* ignore */
+      }
+
+      const updated = body.score
+        ? rowToScore(body.score)
+        : {
+            ...item,
+            title,
+            composer,
+            filename: rebuilt.filename,
+            bytes: rebuilt.archive.length,
+            format: "mxl",
+          };
+      sharedScores = sharedScores.map((score) =>
+        score.id === item.id ? { ...updated, source: "shared" } : score
+      );
+      return updated;
+    }
+
+    const newId = newSharedId();
+    const formData = new FormData();
+    formData.append("id", newId);
+    formData.append("title", title);
+    formData.append("composer", composer);
+    formData.append("credit", item.credit || "Shared exchange");
+    formData.append("filename", rebuilt.filename);
+    formData.append("added", item.added || new Date().toISOString().slice(0, 10));
+    formData.append(
+      "license",
+      item.license ||
+        "Uploaded by a community member. Only share files you have rights to distribute."
+    );
+    formData.append("file", rebuilt.blob, rebuilt.filename);
+
+    const uploadRes = await fetch(`${getApiBase()}/exchange.php`, {
+      method: "POST",
+      body: formData,
+    });
+    const uploadBody = await uploadRes.json().catch(() => ({}));
+    if (!uploadRes.ok) {
+      throw new Error(uploadBody.error || "Could not save the edited score.");
+    }
+
+    await adminDeleteScore(item.id, password);
+
+    blobCache.delete(`shared:${item.id}`);
+    blobCache.delete(`shared:${newId}`);
+    try {
+      await deleteLocal(item.id);
+    } catch (_) {
+      /* ignore */
+    }
+
+    const updated = uploadBody.score
+      ? rowToScore(uploadBody.score)
+      : {
+          id: newId,
+          title,
+          composer,
+          credit: item.credit || "Shared exchange",
+          filename: rebuilt.filename,
+          format: "mxl",
+          bytes: rebuilt.archive.length,
+          added: item.added || "",
+          license: item.license || "",
+          storage_path: storagePathFor(newId),
+        };
+
+    sharedScores = [
+      { ...updated, source: "shared" },
+      ...sharedScores.filter((score) => score.id !== item.id),
+    ].slice(0, MAX_FILES);
+    return updated;
+  };
+
+  const saveEditedScore = async () => {
+    if (!editingItem) return;
+    const title = String(editTitleInput?.value || "").trim();
+    const composer = String(editComposerInput?.value || "").trim();
+    if (title.length < 2) {
+      setEditStatus("Title must be at least 2 characters.", "error");
+      editTitleInput?.focus();
+      return;
+    }
+    if (composer.length < 2) {
+      setEditStatus("Composer must be at least 2 characters.", "error");
+      editComposerInput?.focus();
+      return;
+    }
+    if (!canShowRemove()) {
+      setEditStatus("Admin password required.", "error");
+      return;
+    }
+
+    try {
+      setEditStatus("Unzipping MXL, updating MusicXML, re-zipping…");
+      if (editSaveBtn) editSaveBtn.disabled = true;
+      await updateSharedScore(editingItem, title, composer);
+      closeEditDialog();
+      await loadShared().catch(() => {});
+      render();
+      setStatus(
+        "Updated MusicXML title/composer, rebuilt MXL, and saved under a new file id."
+      );
+    } catch (err) {
+      const msg = String(err?.message || err || "");
+      setEditStatus(
+        /failed to fetch/i.test(msg)
+          ? "Could not reach the score server while saving the edit. Try again."
+          : msg || "Could not update that score.",
+        "error"
+      );
+    } finally {
+      if (editSaveBtn) editSaveBtn.disabled = false;
+    }
   };
 
   // MusicXML order: work, movement-*, identification, …
