@@ -20,6 +20,7 @@
   const composerSelect = document.getElementById("library-composer");
   const scrollLimitInput = document.getElementById("library-scroll-limit");
   const scrollLimitLabelEl = document.getElementById("library-scroll-label");
+  const songCountEl = document.getElementById("library-song-count");
   const countEl = document.getElementById("library-count");
   const adminPasswordInput = document.getElementById("admin-password");
   const SCROLL_LIMIT_STORAGE_KEY = "klavierxml-exchange-scroll-limit";
@@ -479,9 +480,12 @@
   };
 
   const updateCount = () => {
-    if (!countEl) return;
     const total = visibleItems().length;
-    countEl.textContent = `${total} score${total === 1 ? "" : "s"} · max ${MAX_FILES}`;
+    const label = `${total} song${total === 1 ? "" : "s"}`;
+    if (countEl) {
+      countEl.textContent = `${total} score${total === 1 ? "" : "s"} · max ${MAX_FILES}`;
+    }
+    if (songCountEl) songCountEl.textContent = label;
   };
 
   const catalogItems = () => {
