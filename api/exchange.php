@@ -100,7 +100,7 @@ function storage_path_for(string $id): string
 
 function handle_list(PDO $pdo, array $config): void
 {
-  $limit = (int) ($config['max_files'] ?? 100);
+  $limit = (int) ($config['max_files'] ?? 10000);
   $stmt = $pdo->prepare(
     'SELECT id, title, composer, credit, filename, format, bytes, added, license, storage_path
      FROM exchange_scores
@@ -121,7 +121,7 @@ function handle_list(PDO $pdo, array $config): void
 
 function handle_upload(PDO $pdo, array $config): void
 {
-  $maxFiles = (int) ($config['max_files'] ?? 100);
+  $maxFiles = (int) ($config['max_files'] ?? 10000);
   $maxBytes = (int) ($config['max_mxl_bytes'] ?? 100 * 1024);
 
   $count = (int) $pdo->query('SELECT COUNT(*) FROM exchange_scores')->fetchColumn();
