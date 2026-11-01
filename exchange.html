@@ -10,7 +10,7 @@
     />
     <link rel="canonical" href="https://klavierxml.com/exchange.html" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=layout1" />
+    <link rel="stylesheet" href="styles.css?v=layout2" />
   </head>
   <body class="page-exchange">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -118,50 +118,55 @@
               <option value="">All composers</option>
             </select>
           </label>
-          <label class="library-filter">
-            Title contains
-            <input
-              id="library-search"
-              type="search"
-              placeholder="e.g. etude, für Elise, Noël"
-              autocomplete="off"
-              spellcheck="false"
-            />
-          </label>
-          <div class="library-scroll-limit">
-            <div class="library-scroll-limit-row">
-              <label class="library-scroll-limit-head" id="library-scroll-label" for="library-scroll-limit">
-                Show 20 songs
-              </label>
-              <p class="library-song-count" id="library-song-count" aria-live="polite">
-                0 songs
-              </p>
-            </div>
-            <input
-              id="library-scroll-limit"
-              type="range"
-              min="20"
-              max="1010"
-              step="10"
-              value="20"
-              aria-valuetext="Show 20 songs"
-            />
-            <span class="library-scroll-limit-ends" aria-hidden="true">
-              <span>20</span>
-              <span>1000</span>
-              <span>All</span>
-            </span>
-          </div>
-        </div>
 
-        <div class="library-pager" id="library-pager" hidden>
-          <button type="button" class="btn btn-ghost" id="library-prev" disabled>
-            Back
-          </button>
-          <p class="library-pager-status" id="library-pager-status" aria-live="polite"></p>
-          <button type="button" class="btn btn-ghost" id="library-next" disabled>
-            Next 20
-          </button>
+          <div class="library-aids-main">
+            <div class="library-aids-top">
+              <label class="library-filter">
+                Title contains
+                <input
+                  id="library-search"
+                  type="search"
+                  placeholder="e.g. etude, für Elise, Noël"
+                  autocomplete="off"
+                  spellcheck="false"
+                />
+              </label>
+              <div class="library-scroll-limit">
+                <div class="library-scroll-limit-row">
+                  <label class="library-scroll-limit-head" id="library-scroll-label" for="library-scroll-limit">
+                    Show 20 songs
+                  </label>
+                  <p class="library-song-count" id="library-song-count" aria-live="polite">
+                    0 songs
+                  </p>
+                </div>
+                <input
+                  id="library-scroll-limit"
+                  type="range"
+                  min="20"
+                  max="1010"
+                  step="10"
+                  value="20"
+                  aria-valuetext="Show 20 songs"
+                />
+                <span class="library-scroll-limit-ends" aria-hidden="true">
+                  <span>20</span>
+                  <span>1000</span>
+                  <span>All</span>
+                </span>
+              </div>
+            </div>
+
+            <div class="library-pager" id="library-pager" hidden>
+              <button type="button" class="btn btn-ghost" id="library-prev" disabled>
+                Back
+              </button>
+              <p class="library-pager-status" id="library-pager-status" aria-live="polite"></p>
+              <button type="button" class="btn btn-ghost" id="library-next" disabled>
+                Next 20
+              </button>
+            </div>
+          </div>
         </div>
 
         <label class="library-admin">
