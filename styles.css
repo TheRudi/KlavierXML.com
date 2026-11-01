@@ -1299,6 +1299,15 @@ button {
   line-height: 1.1;
 }
 
+.library-total {
+  margin-left: 0.35em;
+  color: var(--ivory-mute);
+  font-weight: 500;
+  font-size: 0.72em;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
 .library-count {
   margin: -0.35rem 0 0;
   color: var(--ivory-mute);

@@ -23,6 +23,7 @@
   const scrollLimitLabelEl = document.getElementById("library-scroll-label");
   const songCountEl = document.getElementById("library-song-count");
   const countEl = document.getElementById("library-count");
+  const totalEl = document.getElementById("library-total");
   const pagerEl = document.getElementById("library-pager");
   const pagerStatusEl = document.getElementById("library-pager-status");
   const prevPageBtn = document.getElementById("library-prev");
@@ -479,10 +480,17 @@
   };
 
   const updateCount = (shown, total, from = 0) => {
+    const catalogTotal = catalogItems().length;
     const matched = total ?? filteredItems().length;
     const displayed = shown ?? 0;
     const start = matched === 0 ? 0 : from + 1;
     const end = from + displayed;
+    if (totalEl) {
+      totalEl.textContent =
+        catalogTotal === 0
+          ? ""
+          : `· ${catalogTotal} song${catalogTotal === 1 ? "" : "s"}`;
+    }
     if (countEl) {
       countEl.textContent =
         matched === 0
