@@ -120,11 +120,21 @@
       .replace(/ẞ/g, "ss")
       .toLowerCase();
 
+  // "Ludwig van Beethoven" → beethoven, "Wolfgang Amadeus Mozart" → mozart
+  const COMPOSER_NAME_NOISE =
+    /^(van|von|de|del|der|den|la|le|di|da|du|des|dos|das|st|ste|jr|sr|ii|iii|iv)$/;
+
   const composerLastName = (composer) => {
     const parts = foldText(composer)
       .split(/[^a-z0-9]+/)
-      .filter((part) => part && !/^(van|von|de|del|der|den|la|le|di|da|du)$/.test(part));
+      .filter((part) => part && !COMPOSER_NAME_NOISE.test(part));
     return parts.length ? parts[parts.length - 1] : "";
+  };
+
+  const sameComposerLastName = (a, b) => {
+    const left = composerLastName(a);
+    const right = composerLastName(b);
+    return Boolean(left) && left === right;
   };
 
   const titleWords = (title) =>
@@ -145,11 +155,10 @@
   };
 
   const findSimilarExchangeScore = (title, composer, catalog = catalogItems()) => {
-    const last = composerLastName(composer);
-    if (!last) return null;
+    if (!composerLastName(composer)) return null;
     let best = null;
     catalog.forEach((item) => {
-      if (composerLastName(item.composer) !== last) return;
+      if (!sameComposerLastName(composer, item.composer)) return;
       const ratio = titleOverlapRatio(title, item.title);
       if (ratio < 0.5) return;
       if (!best || ratio > best.ratio) {
@@ -599,7 +608,8 @@
 
   const matchesFilters = (item) => {
     if (composerFilter) {
-      if (foldText(item.composer) !== foldText(composerFilter)) return false;
+      // Match by surname so "Beethoven" includes "Ludwig van Beethoven".
+      if (!sameComposerLastName(item.composer, composerFilter)) return false;
     }
     if (titleQuery) {
       if (!foldText(item.title).includes(titleQuery)) return false;
@@ -1313,11 +1323,14 @@
     }
     if (composerSelect) {
       const folded = foldText(guessedComposer);
-      const match = folded
-        ? [...composerSelect.options].find(
-            (opt) => opt.value && foldText(opt.value) === folded
-          )
-        : null;
+      const last = composerLastName(guessedComposer);
+      const options = [...composerSelect.options].filter((opt) => opt.value);
+      const match =
+        (folded &&
+          options.find((opt) => foldText(opt.value) === folded)) ||
+        (last &&
+          options.find((opt) => composerLastName(opt.value) === last)) ||
+        null;
       composerSelect.value = match ? match.value : "";
       composerFilter = composerSelect.value;
     }
