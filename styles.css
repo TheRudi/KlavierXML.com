@@ -1321,6 +1321,68 @@ button {
   color: var(--amber);
 }
 
+.convert-progress {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.65rem 0.85rem;
+}
+
+.convert-progress[hidden] {
+  display: none;
+}
+
+.convert-progress-track {
+  position: relative;
+  height: 0.55rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(243, 239, 230, 0.1);
+  border: 1px solid var(--ink-line);
+}
+
+.convert-progress-fill {
+  position: relative;
+  height: 100%;
+  width: 0%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--amber-deep), var(--amber), var(--teal));
+  transition: width 0.25s var(--ease-out);
+}
+
+.convert-progress.is-indeterminate .convert-progress-track::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.22) 45%,
+    transparent 70%
+  );
+  background-size: 220% 100%;
+  animation: convert-progress-shimmer 1.6s linear infinite;
+  pointer-events: none;
+}
+
+.convert-progress-pct {
+  margin: 0;
+  min-width: 2.75rem;
+  text-align: right;
+  color: var(--amber);
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes convert-progress-shimmer {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -40% 0;
+  }
+}
+
 .upload-fields {
   display: grid;
   gap: 0.85rem;

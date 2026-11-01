@@ -95,6 +95,27 @@
           <button class="btn btn-primary" type="submit" id="pdf2xml-submit">
             Convert to MusicXML
           </button>
+
+          <div
+            class="convert-progress"
+            id="pdf2xml-progress"
+            hidden
+            aria-hidden="true"
+          >
+            <div
+              class="convert-progress-track"
+              role="progressbar"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="0"
+              aria-labelledby="pdf2xml-status"
+              id="pdf2xml-progressbar"
+            >
+              <div class="convert-progress-fill" id="pdf2xml-progress-fill"></div>
+            </div>
+            <p class="convert-progress-pct" id="pdf2xml-progress-pct">0%</p>
+          </div>
+
           <p class="file-picker-hint" id="pdf2xml-status" role="status">
             Ready. After conversion your browser will download a
             <code>.xml</code> file.
@@ -156,6 +177,70 @@
       const form = document.getElementById("pdf2xml-form");
       const status = document.getElementById("pdf2xml-status");
       const submitBtn = document.getElementById("pdf2xml-submit");
+      const progressWrap = document.getElementById("pdf2xml-progress");
+      const progressBar = document.getElementById("pdf2xml-progressbar");
+      const progressFill = document.getElementById("pdf2xml-progress-fill");
+      const progressPct = document.getElementById("pdf2xml-progress-pct");
+
+      let progressTimer = null;
+
+      function formatElapsed(ms) {
+        const sec = Math.floor(ms / 1000);
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        if (m <= 0) return s + "s";
+        return m + "m " + String(s).padStart(2, "0") + "s";
+      }
+
+      function setProgress(pct, { indeterminate } = {}) {
+        const clamped = Math.max(0, Math.min(100, pct));
+        progressFill.style.width = clamped + "%";
+        progressPct.textContent = Math.round(clamped) + "%";
+        progressBar.setAttribute("aria-valuenow", String(Math.round(clamped)));
+        progressWrap.classList.toggle("is-indeterminate", !!indeterminate);
+      }
+
+      function showProgress() {
+        progressWrap.hidden = false;
+        progressWrap.setAttribute("aria-hidden", "false");
+        setProgress(0, { indeterminate: true });
+      }
+
+      function hideProgress() {
+        if (progressTimer) {
+          clearInterval(progressTimer);
+          progressTimer = null;
+        }
+        progressWrap.hidden = true;
+        progressWrap.setAttribute("aria-hidden", "true");
+        progressWrap.classList.remove("is-indeterminate");
+        setProgress(0);
+      }
+
+      // Audiveris does not stream % over this request, so ease toward ~92%
+      // over a few minutes, then finish to 100% when the response arrives.
+      function startEstimatedProgress() {
+        const started = Date.now();
+        const halfLifeMs = 55 * 1000;
+        showProgress();
+        progressTimer = setInterval(() => {
+          const elapsed = Date.now() - started;
+          const pct = 92 * (1 - Math.exp(-elapsed / halfLifeMs));
+          setProgress(pct, { indeterminate: true });
+          status.textContent =
+            "Converting with Audiveris… " +
+            formatElapsed(elapsed) +
+            " elapsed. Keep this tab open.";
+        }, 250);
+      }
+
+      function finishProgress() {
+        if (progressTimer) {
+          clearInterval(progressTimer);
+          progressTimer = null;
+        }
+        setProgress(100, { indeterminate: false });
+      }
 
       fileInput.addEventListener("change", () => {
         const file = fileInput.files && fileInput.files[0];
@@ -178,8 +263,7 @@
         if (composer) body.append("composer", composer);
 
         submitBtn.disabled = true;
-        status.textContent =
-          "Converting with Audiveris… this can take one to a few minutes. Keep this tab open.";
+        startEstimatedProgress();
 
         try {
           const response = await fetch("api/convert.php", {
@@ -214,9 +298,13 @@
           a.remove();
           URL.revokeObjectURL(url);
 
+          finishProgress();
           status.textContent =
-            "Done. Downloaded " + downloadName + ". Open it in Klavier or share it on the exchange.";
+            "Done. Downloaded " +
+            downloadName +
+            ". Open it in Klavier or share it on the exchange.";
         } catch (err) {
+          hideProgress();
           status.textContent =
             err && err.message ? err.message : "Conversion failed.";
         } finally {
