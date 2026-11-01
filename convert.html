@@ -208,6 +208,25 @@
         return { estimatedMeasures, estimatedSeconds, secPerMeasure: SEC_PER_MEASURE };
       }
 
+      function filenameSlug(value) {
+        return String(value || "")
+          .trim()
+          .replace(/\s+/g, "_")
+          .replace(/[^A-Za-z0-9._-]+/g, "")
+          .replace(/^[._-]+|[._-]+$/g, "");
+      }
+
+      /** Composer-Full_Title.XML */
+      function buildDownloadName(title, composer, pdfName) {
+        const c = filenameSlug(composer);
+        const t = filenameSlug(title);
+        if (c && t) return c + "-" + t + ".XML";
+        if (t) return t + ".XML";
+        if (c) return c + ".XML";
+        const base = filenameSlug(String(pdfName || "score").replace(/\.pdf$/i, ""));
+        return (base || "score") + ".XML";
+      }
+
       function progressFromEstimate(elapsedMs, estimate, serverPct) {
         const estSec = (estimate && estimate.estimatedSeconds) || 0;
         let timePct = 5;
@@ -420,7 +439,7 @@
           const done = await pollJob(started.jobId, startedAt, estimate);
           const fallbackName =
             (done && done.downloadName) ||
-            file.name.replace(/\.pdf$/i, "") + ".xml";
+            buildDownloadName(title, composer, file.name);
           const downloadName = await downloadJob(started.jobId, fallbackName);
 
           finishProgress();

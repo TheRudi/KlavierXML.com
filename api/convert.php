@@ -126,6 +126,7 @@ function handle_post(): void
   }
 
   $safeBase = preg_replace('/[^A-Za-z0-9._-]+/', '_', pathinfo($origName, PATHINFO_FILENAME)) ?: 'score';
+  $downloadName = build_download_name($title, $composer, $safeBase);
   $inputPdf = $jobDir . '/' . $safeBase . '.pdf';
   if (!move_uploaded_file($tmpName, $inputPdf)) {
     throw new RuntimeException('Could not store uploaded PDF.');
@@ -136,6 +137,7 @@ function handle_post(): void
     'jobId' => $jobId,
     'pdf' => basename($inputPdf),
     'safeBase' => $safeBase,
+    'downloadName' => $downloadName,
     'title' => $title,
     'composer' => $composer,
     'origName' => $origName,
@@ -151,7 +153,7 @@ function handle_post(): void
     'pct' => 2,
     'message' => 'Upload received. Starting Audiveris…',
     'error' => null,
-    'downloadName' => $safeBase . '.xml',
+    'downloadName' => $downloadName,
     'estimatedMeasures' => $estimate['estimatedMeasures'],
     'estimatedSeconds' => $estimate['estimatedSeconds'],
     'secPerMeasure' => SEC_PER_MEASURE,
@@ -168,7 +170,7 @@ function handle_post(): void
     'pct' => 2,
     'message' => 'Upload received. Converting in the background…',
     'error' => null,
-    'downloadName' => $safeBase . '.xml',
+    'downloadName' => $downloadName,
     'estimatedMeasures' => $estimate['estimatedMeasures'],
     'estimatedSeconds' => $estimate['estimatedSeconds'],
     'secPerMeasure' => SEC_PER_MEASURE,
@@ -196,6 +198,7 @@ function run_conversion_job(string $jobDir, array $meta): void
   $inputPdf = $jobDir . '/' . $pdfName;
   $title = trim((string) ($meta['title'] ?? ''));
   $composer = trim((string) ($meta['composer'] ?? ''));
+  $downloadName = (string) ($meta['downloadName'] ?? build_download_name($title, $composer, $safeBase));
 
   try {
     if (!is_file($inputPdf)) {
@@ -207,7 +210,7 @@ function run_conversion_job(string $jobDir, array $meta): void
       'pct' => 8,
       'message' => 'Preparing score image…',
       'error' => null,
-      'downloadName' => $safeBase . '.xml',
+      'downloadName' => $downloadName,
     ]);
 
     $pdfForOmr = $inputPdf;
@@ -227,7 +230,7 @@ function run_conversion_job(string $jobDir, array $meta): void
       'pct' => 18,
       'message' => 'Running Audiveris (this can take several minutes)…',
       'error' => null,
-      'downloadName' => $safeBase . '.xml',
+      'downloadName' => $downloadName,
     ]);
 
     $outDir = $jobDir . '/out';
@@ -250,7 +253,7 @@ function run_conversion_job(string $jobDir, array $meta): void
       'pct' => 88,
       'message' => 'Exporting MusicXML…',
       'error' => null,
-      'downloadName' => $safeBase . '.xml',
+      'downloadName' => $downloadName,
     ]);
 
     $xmlPath = find_best_musicxml($outDir, $safeBase);
@@ -288,8 +291,7 @@ function run_conversion_job(string $jobDir, array $meta): void
       file_put_contents($xmlPath, $xml);
     }
 
-    $finalName = $safeBase . '.xml';
-    $finalPath = $jobDir . '/' . $finalName;
+    $finalPath = $jobDir . '/' . $downloadName;
     if (!is_file($finalPath) || realpath($xmlPath) !== realpath($finalPath)) {
       copy($xmlPath, $finalPath);
     }
@@ -299,8 +301,8 @@ function run_conversion_job(string $jobDir, array $meta): void
       'pct' => 100,
       'message' => 'Done.',
       'error' => null,
-      'downloadName' => $finalName,
-      'xml' => $finalName,
+      'downloadName' => $downloadName,
+      'xml' => $downloadName,
     ]);
   } catch (Throwable $e) {
     write_status($jobDir, [
@@ -311,6 +313,33 @@ function run_conversion_job(string $jobDir, array $meta): void
       'downloadName' => null,
     ]);
   }
+}
+
+function filename_slug(string $value): string
+{
+  $value = trim($value);
+  $value = preg_replace('/\s+/', '_', $value) ?? '';
+  $value = preg_replace('/[^A-Za-z0-9._-]+/', '', $value) ?? '';
+  $value = trim($value, '._-');
+  return $value;
+}
+
+/** Composer-Full_Title.XML — spaces become underscores. */
+function build_download_name(string $title, string $composer, string $fallbackBase): string
+{
+  $composerSlug = filename_slug($composer);
+  $titleSlug = filename_slug($title);
+  if ($composerSlug !== '' && $titleSlug !== '') {
+    return $composerSlug . '-' . $titleSlug . '.XML';
+  }
+  if ($titleSlug !== '') {
+    return $titleSlug . '.XML';
+  }
+  if ($composerSlug !== '') {
+    return $composerSlug . '.XML';
+  }
+  $fallback = filename_slug($fallbackBase);
+  return ($fallback !== '' ? $fallback : 'score') . '.XML';
 }
 
 function estimate_conversion(int $pdfBytes): array
