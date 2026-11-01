@@ -120,6 +120,53 @@
       .replace(/ẞ/g, "ss")
       .toLowerCase();
 
+  const composerLastName = (composer) => {
+    const parts = foldText(composer)
+      .split(/[^a-z0-9]+/)
+      .filter((part) => part && !/^(van|von|de|del|der|den|la|le|di|da|du)$/.test(part));
+    return parts.length ? parts[parts.length - 1] : "";
+  };
+
+  const titleWords = (title) =>
+    foldText(title)
+      .split(/[^a-z0-9]+/)
+      .filter((word) => word.length >= 2);
+
+  /** Share of candidate title words that also appear in the other title. */
+  const titleOverlapRatio = (candidateTitle, otherTitle) => {
+    const a = titleWords(candidateTitle);
+    const b = new Set(titleWords(otherTitle));
+    if (!a.length || !b.size) return 0;
+    let hits = 0;
+    a.forEach((word) => {
+      if (b.has(word)) hits += 1;
+    });
+    return hits / a.length;
+  };
+
+  const findSimilarExchangeScore = (title, composer, catalog = catalogItems()) => {
+    const last = composerLastName(composer);
+    if (!last) return null;
+    let best = null;
+    catalog.forEach((item) => {
+      if (composerLastName(item.composer) !== last) return;
+      const ratio = titleOverlapRatio(title, item.title);
+      if (ratio < 0.5) return;
+      if (!best || ratio > best.ratio) {
+        best = { item, ratio };
+      }
+    });
+    return best;
+  };
+
+  const confirmSimilarUpload = (title, composer, similar) => {
+    const existing = `${similar.item.composer} — ${similar.item.title}`;
+    const incoming = `${composer} — ${title}`;
+    return window.confirm(
+      `Upload this song: ${incoming}?\n\nIt looks very similar to ${existing} on the exchange server.`
+    );
+  };
+
   const canShowRemove = () =>
     String(adminPasswordInput?.value || "") === REMOVE_PASSWORD;
 
@@ -1439,6 +1486,7 @@
     }
 
     let ok = 0;
+    let skipped = 0;
     let convertedCount = 0;
     const failures = [];
 
@@ -1458,6 +1506,20 @@
             title = multi ? meta.title : title || meta.title;
             composer = multi ? meta.composer : composer || meta.composer;
           }
+
+          if (multi) {
+            const similar = findSimilarExchangeScore(title, composer);
+            if (similar) {
+              setStatus(
+                `Similar score found for ${i + 1} of ${files.length}: ${file.name}`
+              );
+              if (!confirmSimilarUpload(title, composer, similar)) {
+                skipped += 1;
+                continue;
+              }
+            }
+          }
+
           const result = await uploadOneScore(file, title, composer, progress);
           ok += 1;
           if (result.converted) convertedCount += 1;
@@ -1476,16 +1538,15 @@
       render();
 
       if (multi) {
-        const failNote = failures.length
-          ? ` ${failures.length} failed: ${failures.slice(0, 3).join(" · ")}`
-          : "";
-        const convertedNote = convertedCount
-          ? ` ${convertedCount} converted to MXL.`
-          : "";
-        setStatus(
-          `Published ${ok} of ${files.length} scores.${convertedNote}${failNote}`,
-          failures.length ? "error" : ""
-        );
+        const parts = [`Published ${ok} of ${files.length} scores.`];
+        if (convertedCount) parts.push(`${convertedCount} converted to MXL.`);
+        if (skipped) parts.push(`${skipped} skipped as similar.`);
+        if (failures.length) {
+          parts.push(
+            `${failures.length} failed: ${failures.slice(0, 3).join(" · ")}`
+          );
+        }
+        setStatus(parts.join(" "), failures.length ? "error" : "");
       } else {
         const convertedNote = convertedCount ? " Converted to MXL." : "";
         setStatus(
