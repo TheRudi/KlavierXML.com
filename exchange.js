@@ -529,6 +529,61 @@
       return type === "composer" && xmlElementText(el).length > 0;
     });
 
+  /** Read title/composer from MusicXML text for form autofill. */
+  const extractScoreMetadata = (xmlText) => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlText, "application/xml");
+    if (doc.querySelector("parsererror")) {
+      return { title: "", composer: "" };
+    }
+
+    const firstText = (selectors) => {
+      for (const sel of selectors) {
+        for (const el of doc.querySelectorAll(sel)) {
+          const text = xmlElementText(el);
+          if (text) return text;
+        }
+      }
+      return "";
+    };
+
+    const title = firstText(["work-title", "movement-title"]);
+
+    let composer = "";
+    for (const el of doc.querySelectorAll("creator")) {
+      const type = String(el.getAttribute("type") || "composer").toLowerCase();
+      const text = xmlElementText(el);
+      if (!text) continue;
+      if (type === "composer") {
+        composer = text;
+        break;
+      }
+      if (!composer && (type === "" || type === "composer")) composer = text;
+    }
+    if (!composer) {
+      for (const el of doc.querySelectorAll("creator")) {
+        const text = xmlElementText(el);
+        if (text) {
+          composer = text;
+          break;
+        }
+      }
+    }
+
+    return { title, composer };
+  };
+
+  const xmlTextFromUpload = async (file, buffer) => {
+    const ext = extensionOf(file.name);
+    if (ext === "mxl") {
+      if (!window.KlavierPlayer?.unzipXml) {
+        throw new Error("Score reader is not ready yet. Try again in a moment.");
+      }
+      return window.KlavierPlayer.unzipXml(buffer);
+    }
+    return stripBom(new TextDecoder().decode(buffer)).trim();
+  };
+
   const insertAfterRootOpen = (doc, root, node) => {
     const first = root.firstChild;
     if (first) root.insertBefore(node, first);
@@ -899,10 +954,29 @@
       reader.readAsArrayBuffer(file);
     });
 
-  fileInput?.addEventListener("change", () => {
+  fileInput?.addEventListener("change", async () => {
     const file = fileInput.files?.[0];
     fileNameEl.textContent = file ? file.name : "No file chosen";
-    if (file && !titleInput.value) titleInput.value = titleFromFile(file.name);
+    if (!file) return;
+
+    const ext = extensionOf(file.name);
+    if (!ALLOWED.has(ext)) {
+      if (!titleInput.value.trim()) titleInput.value = titleFromFile(file.name);
+      return;
+    }
+
+    // Prefer MusicXML metadata; fall back to the file name for title only.
+    try {
+      const buffer = await readFile(file);
+      const xmlText = await xmlTextFromUpload(file, buffer);
+      const meta = extractScoreMetadata(xmlText);
+      if (meta.title) titleInput.value = meta.title.slice(0, 120);
+      else if (!titleInput.value.trim()) titleInput.value = titleFromFile(file.name);
+
+      if (meta.composer) composerInput.value = meta.composer.slice(0, 160);
+    } catch (_) {
+      if (!titleInput.value.trim()) titleInput.value = titleFromFile(file.name);
+    }
   });
 
   form.addEventListener("reset", () => {
