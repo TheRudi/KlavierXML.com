@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PDF2XML — KlavierXML</title>
+    <meta
+      name="description"
+      content="Convert a score PDF to MusicXML on KlavierXML.com for use in the Klavier piano app."
+    />
+    <link rel="canonical" href="https://klavierxml.com/convert.html" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="page-exchange">
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header site-header-solid">
+      <a class="wordmark" href="index.html">Klavier<span>XML</span></a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="index.html#musicxml">MusicXML</a>
+        <a href="index.html#get-songs">Get songs</a>
+        <a href="exchange.html">Exchange</a>
+        <a href="convert.html" aria-current="page">PDF2XML</a>
+        <a href="licenses.html">Licenses</a>
+        <a class="nav-cta" href="index.html#privacy">Privacy</a>
+      </nav>
+    </header>
+
+    <main id="main" class="exchange-main">
+      <header class="legal-hero">
+        <p class="section-kicker">Option 05</p>
+        <h1 class="legal-title">PDF2XML on KlavierXML.com</h1>
+        <p class="legal-lede">
+          Upload a score PDF. KlavierXML converts it to MusicXML so you can open
+          it in the Klavier app or share it on the
+          <a href="exchange.html">MusicXML exchange</a>.
+        </p>
+      </header>
+
+      <section class="exchange-panel" aria-labelledby="convert-heading">
+        <div class="exchange-panel-copy">
+          <p class="section-kicker">Convert</p>
+          <h2 id="convert-heading">Score PDF → MusicXML</h2>
+          <p>
+            Use a scanned score PDF, or a PDF you built from JPG pages (see
+            <a href="index.html#get-songs">How to get songs</a>, option 04).
+            Please only upload music you have the right to convert.
+          </p>
+        </div>
+
+        <form class="upload-form" id="pdf2xml-form">
+          <label class="file-picker" for="pdf-file">
+            <span class="file-picker-label">PDF file</span>
+            <input
+              id="pdf-file"
+              name="pdf"
+              type="file"
+              accept=".pdf,application/pdf"
+              required
+            />
+            <span class="file-picker-hint"
+              >Browse for a .pdf score · multi-page scans welcome</span
+            >
+            <span class="file-picker-name" id="pdf-file-name">No file chosen</span>
+          </label>
+
+          <div class="upload-fields">
+            <label>
+              Title <span class="optional">(optional)</span>
+              <input
+                id="pdf-title"
+                name="title"
+                type="text"
+                maxlength="120"
+                placeholder="e.g. Mad World"
+                autocomplete="off"
+              />
+            </label>
+            <label>
+              Composer <span class="optional">(optional)</span>
+              <input
+                id="pdf-composer"
+                name="composer"
+                type="text"
+                maxlength="120"
+                placeholder="e.g. Roland Orzabal"
+                autocomplete="off"
+              />
+            </label>
+          </div>
+
+          <button class="btn btn-primary" type="submit" id="pdf2xml-submit">
+            Convert to MusicXML
+          </button>
+          <p class="file-picker-hint" id="pdf2xml-status" role="status">
+            Conversion runs on klavierxml.com. You will get a downloadable
+            <code>.xml</code> when it finishes.
+          </p>
+        </form>
+      </section>
+
+      <section class="exchange-panel" aria-labelledby="after-heading">
+        <div class="exchange-panel-copy">
+          <p class="section-kicker">Next</p>
+          <h2 id="after-heading">After you download</h2>
+          <ol class="get-steps">
+            <li>
+              <span>Save the MusicXML on your iPad.</span>
+            </li>
+            <li>
+              <span>Open the file from the Klavier app.</span>
+            </li>
+            <li>
+              <span>
+                Or upload it to the
+                <a href="exchange.html">MusicXML exchange</a> so others can
+                download it.
+              </span>
+            </li>
+          </ol>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <p class="footer-brand">KlavierXML</p>
+        <p>
+          <a href="index.html">Home</a>
+          ·
+          <a href="index.html#get-songs">Get songs</a>
+          ·
+          <a href="exchange.html">Exchange</a>
+          ·
+          <a href="licenses.html">Licenses</a>
+          · © <span id="year"></span> Rüdiger Lueg
+        </p>
+        <p class="contact-line">
+          Contact:
+          <a href="mailto:rudilueg@gmail.com">rudilueg@gmail.com</a>
+        </p>
+        <p class="footer-highlands">Highlands</p>
+      </div>
+    </footer>
+
+    <script>
+      document.getElementById("year").textContent = String(
+        new Date().getFullYear()
+      );
+
+      const fileInput = document.getElementById("pdf-file");
+      const fileName = document.getElementById("pdf-file-name");
+      const form = document.getElementById("pdf2xml-form");
+      const status = document.getElementById("pdf2xml-status");
+
+      fileInput.addEventListener("change", () => {
+        const file = fileInput.files && fileInput.files[0];
+        fileName.textContent = file ? file.name : "No file chosen";
+      });
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const file = fileInput.files && fileInput.files[0];
+        if (!file) {
+          status.textContent = "Choose a PDF first.";
+          return;
+        }
+        status.textContent =
+          "PDF2XML is listed on KlavierXML.com. Server-side conversion is next — your file “" +
+          file.name +
+          "” is ready to send once the converter endpoint is live.";
+      });
+    </script>
+  </body>
+</html>
