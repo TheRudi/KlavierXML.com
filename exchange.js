@@ -16,6 +16,7 @@
   const fileNameEl = document.getElementById("file-name");
   const titleInput = document.getElementById("score-title");
   const composerInput = document.getElementById("score-composer");
+  const rightsInput = document.getElementById("upload-rights");
   const searchInput = document.getElementById("library-search");
   const composerSelect = document.getElementById("library-composer");
   const scrollLimitInput = document.getElementById("library-scroll-limit");
@@ -1292,6 +1293,11 @@
     if (composer.length < 2) {
       setStatus("Composer must be at least 2 characters.", "error");
       composerInput.focus();
+      return;
+    }
+    if (!rightsInput?.checked) {
+      setStatus("Confirm that you have the rights to upload and share.", "error");
+      rightsInput?.focus();
       return;
     }
 

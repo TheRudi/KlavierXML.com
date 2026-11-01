@@ -110,6 +110,27 @@ button {
   padding: 1.25rem clamp(1.25rem, 4vw, 3rem);
 }
 
+.site-disclaimer {
+  position: relative;
+  z-index: 19;
+  margin: 0;
+  padding: 0.85rem clamp(1.25rem, 4vw, 3rem);
+  border-block: 1px solid rgba(224, 176, 122, 0.35);
+  background: linear-gradient(
+    90deg,
+    rgba(224, 176, 122, 0.16),
+    rgba(12, 15, 20, 0.55) 40%,
+    rgba(224, 176, 122, 0.16)
+  );
+  color: var(--ivory);
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 2.4vw, 1.65rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-wrap: balance;
+}
+
 .wordmark {
   font-family: var(--font-display);
   font-size: 1.35rem;
@@ -1292,6 +1313,25 @@ button {
 .upload-form {
   display: grid;
   gap: 1rem;
+}
+
+.upload-rights {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin: 0;
+  color: var(--ivory-soft);
+  font-size: 0.95rem;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.upload-rights input {
+  margin-top: 0.2rem;
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--teal);
+  flex: 0 0 auto;
 }
 
 .file-picker {
