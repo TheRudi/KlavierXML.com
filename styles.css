@@ -1637,14 +1637,6 @@ button {
   opacity: 0.85;
 }
 
-.exchange-list.is-scroll-limited {
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding-right: 0.25rem;
-  border-bottom: 1px solid var(--ink-line);
-  scrollbar-color: rgba(224, 176, 122, 0.45) transparent;
-}
-
 .library-admin {
   display: grid;
   gap: 0.25rem;

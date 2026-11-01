@@ -89,35 +89,14 @@
 
   const syncScrollLimitUi = () => {
     const isAll = scrollLimit >= SCROLL_LIMIT_ALL;
-    const valueText = isAll ? "All songs, no scroll limit" : `${scrollLimit} songs`;
+    const valueText = isAll ? "Show all songs" : `Show ${scrollLimit} songs`;
     if (scrollLimitInput) {
       scrollLimitInput.value = String(scrollLimit);
       scrollLimitInput.setAttribute("aria-valuetext", valueText);
     }
     if (scrollLimitLabelEl) {
-      scrollLimitLabelEl.textContent = isAll
-        ? "Show all songs (no list scroll)"
-        : `Scroll after ${scrollLimit} songs`;
+      scrollLimitLabelEl.textContent = valueText;
     }
-  };
-
-  const applyListScrollLimit = () => {
-    if (!listEl) return;
-    const items = listEl.querySelectorAll(".exchange-item");
-    const unlimited =
-      scrollLimit >= SCROLL_LIMIT_ALL || items.length <= scrollLimit;
-    if (unlimited) {
-      listEl.classList.remove("is-scroll-limited");
-      listEl.style.maxHeight = "";
-      return;
-    }
-
-    let height = 0;
-    for (let i = 0; i < scrollLimit; i += 1) {
-      height += items[i].offsetHeight;
-    }
-    listEl.classList.add("is-scroll-limited");
-    listEl.style.maxHeight = `${height}px`;
   };
 
   scrollLimit = readStoredScrollLimit();
@@ -479,13 +458,21 @@
     statusEl.dataset.kind = kind;
   };
 
-  const updateCount = () => {
-    const total = visibleItems().length;
-    const label = `${total} song${total === 1 ? "" : "s"}`;
+  const updateCount = (shown, total) => {
+    const matched = total ?? filteredItems().length;
+    const displayed = shown ?? Math.min(matched, displayLimit());
     if (countEl) {
-      countEl.textContent = `${total} score${total === 1 ? "" : "s"} · max ${MAX_FILES}`;
+      countEl.textContent =
+        displayed < matched
+          ? `${displayed} of ${matched} scores · max ${MAX_FILES}`
+          : `${matched} score${matched === 1 ? "" : "s"} · max ${MAX_FILES}`;
     }
-    if (songCountEl) songCountEl.textContent = label;
+    if (songCountEl) {
+      songCountEl.textContent =
+        displayed < matched
+          ? `${displayed} of ${matched} songs`
+          : `${matched} song${matched === 1 ? "" : "s"}`;
+    }
   };
 
   const catalogItems = () => {
@@ -514,7 +501,17 @@
     return true;
   };
 
-  const visibleItems = () => catalogItems().filter(matchesFilters);
+  const displayLimit = () =>
+    scrollLimit >= SCROLL_LIMIT_ALL ? Infinity : scrollLimit;
+
+  const filteredItems = () => catalogItems().filter(matchesFilters);
+
+  /** Matching songs, capped by the show-limit slider (All = uncapped). */
+  const visibleItems = () => {
+    const items = filteredItems();
+    const limit = displayLimit();
+    return Number.isFinite(limit) ? items.slice(0, limit) : items;
+  };
 
   const uniqueComposers = () => {
     const byFold = new Map();
@@ -1048,10 +1045,11 @@
 
   const render = () => {
     refreshComposerList();
+    const matched = filteredItems();
     const items = visibleItems();
     listEl.innerHTML = "";
-    emptyEl.hidden = items.length > 0;
-    updateCount();
+    emptyEl.hidden = matched.length > 0;
+    updateCount(items.length, matched.length);
 
     items.forEach((item) => {
       const li = document.createElement("li");
@@ -1144,8 +1142,6 @@
       li.append(meta, actions);
       listEl.append(li);
     });
-
-    applyListScrollLimit();
   };
 
   const loadBuiltin = async () => {
@@ -1328,15 +1324,11 @@
     } catch (_) {
       /* ignore quota / private mode */
     }
-    applyListScrollLimit();
+    render();
   });
 
   adminPasswordInput?.addEventListener("input", () => {
     render();
-  });
-
-  window.addEventListener("resize", () => {
-    applyListScrollLimit();
   });
 
   viewerCloseBtn?.addEventListener("click", closeScoreViewer);
