@@ -12,7 +12,7 @@ return [
     'pass' => 'CHANGE_ME',
   ],
   'storage_dir' => __DIR__ . '/../exchange-data/files',
-  'max_files' => 100,
+  'max_files' => 10000,
   'max_mxl_bytes' => 100 * 1024,
   'remove_password' => 'CHANGE_ME',
 ];

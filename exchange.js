@@ -3,7 +3,7 @@
   const STORE = "scores";
   const MAX_MXL_BYTES = 100 * 1024;
   const MAX_XML_BYTES = 1024 * 1024 * 1024;
-  const MAX_FILES = 100;
+  const MAX_FILES = 10000;
   const ALLOWED = new Set(["xml", "musicxml", "mxl"]);
   const REMOVE_PASSWORD = "Kla4FürW3n1ger€";
   const STORAGE_BUCKET = "exchange";
