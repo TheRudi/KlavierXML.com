@@ -10,7 +10,7 @@
     />
     <link rel="canonical" href="https://klavierxml.com/exchange.html" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=edit1" />
   </head>
   <body class="page-exchange">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -25,6 +25,7 @@
         <a class="nav-cta" href="index.html#privacy">Privacy</a>
       </nav>
     </header>
+    <p class="site-disclaimer" role="note">Only for personal use</p>
 
     <main id="main" class="exchange-main">
       <header class="legal-hero">
@@ -50,17 +51,18 @@
 
         <form class="upload-form" id="upload-form">
           <label class="file-picker" for="score-file">
-            <span class="file-picker-label">Score file</span>
+            <span class="file-picker-label">Score file(s)</span>
             <input
               id="score-file"
               name="score"
               type="file"
               accept=".xml,.musicxml,.mxl,.zip,text/xml,application/xml,application/zip,application/x-zip-compressed,application/octet-stream,application/vnd.recordare.musicxml,application/vnd.recordare.musicxml+xml"
+              multiple
               required
             />
             <span class="file-picker-hint"
-              >Browse Files for a .xml, .musicxml, or .mxl score · XML → MXL ·
-              XML max 1&nbsp;GB · MXL max 100&nbsp;KB · max 100 shared files</span
+              >Choose one or many .xml, .musicxml, or .mxl scores · XML → MXL ·
+              XML max 1&nbsp;GB · MXL max 100&nbsp;KB · max 10,000 shared files</span
             >
             <span class="file-picker-name" id="file-name">No file chosen</span>
           </label>
@@ -72,10 +74,9 @@
                 id="score-title"
                 name="title"
                 type="text"
-                required
                 minlength="2"
                 maxlength="120"
-                placeholder="e.g. Minuet in G"
+                placeholder="e.g. Minuet in G · auto for multi-upload"
                 autocomplete="off"
               />
             </label>
@@ -85,17 +86,31 @@
                 id="score-composer"
                 name="composer"
                 type="text"
-                required
                 minlength="2"
                 maxlength="160"
-                placeholder="e.g. J.S. Bach"
+                placeholder="e.g. J.S. Bach · auto for multi-upload"
                 autocomplete="off"
               />
             </label>
           </div>
 
+          <label class="upload-rights">
+            <input
+              id="upload-rights"
+              name="rights"
+              type="checkbox"
+              required
+            />
+            <span>I have the rights to upload and share</span>
+          </label>
+
           <div class="cta-row">
-            <button class="btn btn-primary" type="submit">Upload score</button>
+            <button class="btn btn-primary" type="submit" id="upload-submit">
+              Upload score
+            </button>
+            <button class="btn btn-ghost" type="button" id="upload-multi">
+              Choose multiple scores
+            </button>
             <button class="btn btn-ghost" type="reset">Clear</button>
           </div>
           <p class="upload-status" id="upload-status" role="status"></p>
@@ -106,18 +121,70 @@
         <div class="library-head">
           <div>
             <p class="section-kicker">Library</p>
-            <h2 id="library-heading">Browse scores</h2>
+            <h2 id="library-heading">
+              Browse scores
+              <span class="library-total" id="library-total"></span>
+            </h2>
             <p class="library-count" id="library-count"></p>
           </div>
-          <label class="library-filter">
-            <span class="visually-hidden">Filter scores</span>
-            <input
-              id="library-search"
-              type="search"
-              placeholder="Search title or composer"
-              autocomplete="off"
-            />
+        </div>
+
+        <div class="library-aids" role="search" aria-label="Find a score">
+          <label class="library-composer">
+            Composer
+            <select id="library-composer" size="8">
+              <option value="">All composers</option>
+            </select>
           </label>
+
+          <div class="library-aids-main">
+            <div class="library-aids-top">
+              <label class="library-filter">
+                Title contains
+                <input
+                  id="library-search"
+                  type="search"
+                  placeholder="e.g. etude, für Elise, Noël"
+                  autocomplete="off"
+                  spellcheck="false"
+                />
+              </label>
+              <div class="library-scroll-limit">
+                <div class="library-scroll-limit-row">
+                  <label class="library-scroll-limit-head" id="library-scroll-label" for="library-scroll-limit">
+                    Show 20 songs
+                  </label>
+                  <p class="library-song-count" id="library-song-count" aria-live="polite">
+                    0 songs
+                  </p>
+                </div>
+                <input
+                  id="library-scroll-limit"
+                  type="range"
+                  min="20"
+                  max="1010"
+                  step="10"
+                  value="20"
+                  aria-valuetext="Show 20 songs"
+                />
+                <span class="library-scroll-limit-ends" aria-hidden="true">
+                  <span>20</span>
+                  <span>1000</span>
+                  <span>All</span>
+                </span>
+              </div>
+            </div>
+
+            <div class="library-pager" id="library-pager" hidden>
+              <button type="button" class="btn btn-ghost" id="library-prev" disabled>
+                Back
+              </button>
+              <p class="library-pager-status" id="library-pager-status" aria-live="polite"></p>
+              <button type="button" class="btn btn-ghost" id="library-next" disabled>
+                Next 20
+              </button>
+            </div>
+          </div>
         </div>
 
         <label class="library-admin">
@@ -151,6 +218,67 @@
         </p>
       </aside>
     </main>
+
+    <div
+      class="exchange-dialog"
+      id="yesno-dialog"
+      hidden
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="yesno-title"
+    >
+      <button
+        type="button"
+        class="exchange-dialog-backdrop"
+        id="yesno-backdrop"
+        aria-label="Dismiss"
+      ></button>
+      <div class="exchange-dialog-panel">
+        <h2 id="yesno-title" class="exchange-dialog-title">Confirm upload</h2>
+        <p class="exchange-dialog-message" id="yesno-message"></p>
+        <div class="cta-row exchange-dialog-actions">
+          <button type="button" class="btn btn-primary" id="yesno-yes">Yes</button>
+          <button type="button" class="btn btn-ghost" id="yesno-no">No</button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="exchange-dialog"
+      id="edit-dialog"
+      hidden
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="edit-dialog-title"
+    >
+      <button
+        type="button"
+        class="exchange-dialog-backdrop"
+        id="edit-backdrop"
+        aria-label="Close edit dialog"
+      ></button>
+      <div class="exchange-dialog-panel">
+        <h2 id="edit-dialog-title" class="exchange-dialog-title">Edit score</h2>
+        <p class="exchange-dialog-message">
+          Updates the exchange listing, MusicXML metadata, and download filename.
+        </p>
+        <label class="exchange-dialog-field">
+          Title
+          <input id="edit-title" type="text" maxlength="120" autocomplete="off" />
+        </label>
+        <label class="exchange-dialog-field">
+          Composer
+          <input id="edit-composer" type="text" maxlength="160" autocomplete="off" />
+        </label>
+        <p class="exchange-dialog-status" id="edit-status" role="status"></p>
+        <div class="cta-row exchange-dialog-actions">
+          <button type="button" class="btn btn-primary" id="edit-save">
+            Save changes
+          </button>
+          <button type="button" class="btn btn-ghost" id="edit-cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
 
     <div
       class="score-viewer"
@@ -199,14 +327,14 @@
           Contact:
           <a href="mailto:rudilueg@gmail.com">rudilueg@gmail.com</a>
         </p>
+        <p class="footer-highlands">Highlands</p>
       </div>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@1.8.9/build/opensheetmusicdisplay.min.js"></script>
     <script src="app.js?v=viewer1" defer></script>
-    <script src="exchange-config.js?v=viewer1" defer></script>
-    <script src="player.js?v=viewer1" defer></script>
-    <script src="exchange.js?v=viewer1" defer></script>
+    <script src="exchange-config.js?v=preview2" defer></script>
+    <script src="player.js?v=preview2" defer></script>
+    <script src="exchange.js?v=edit2" defer></script>
   </body>
 </html>
