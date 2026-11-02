@@ -10,7 +10,7 @@
     />
     <link rel="canonical" href="https://klavierxml.com/convert.html" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=rights1" />
+    <link rel="stylesheet" href="styles.css?v=convex1" />
   </head>
   <body class="page-exchange">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -93,6 +93,18 @@
             </label>
           </div>
 
+          <label class="upload-rights">
+            <input id="pdf-to-exchange" name="to_exchange" type="checkbox" />
+            <span
+              >Also upload to the MusicXML exchange if this score is not already
+              there</span
+            >
+          </label>
+          <label class="upload-rights" id="pdf-exchange-rights-wrap" hidden>
+            <input id="pdf-exchange-rights" name="exchange_rights" type="checkbox" />
+            <span>I have the rights to upload and share</span>
+          </label>
+
           <button class="btn btn-primary" type="submit" id="pdf2xml-submit">
             Convert to MusicXML
           </button>
@@ -168,6 +180,8 @@
       </div>
     </footer>
 
+    <script src="exchange-config.js?v=preview2" defer></script>
+    <script src="mxl-zip.js?v=convex1" defer></script>
     <script>
       document.getElementById("year").textContent = String(
         new Date().getFullYear()
@@ -182,12 +196,79 @@
       const progressBar = document.getElementById("pdf2xml-progressbar");
       const progressFill = document.getElementById("pdf2xml-progress-fill");
       const progressPct = document.getElementById("pdf2xml-progress-pct");
+      const toExchangeInput = document.getElementById("pdf-to-exchange");
+      const exchangeRightsWrap = document.getElementById(
+        "pdf-exchange-rights-wrap"
+      );
+      const exchangeRightsInput = document.getElementById("pdf-exchange-rights");
 
       let progressTimer = null;
 
       // Planning ETA from live Noten batch (~0.9 s/measure measured; 1.3 s used for ETA).
       const SEC_PER_MEASURE = 1.3;
       const MEASURES_PER_PDF_BYTE = 443 / 2847184;
+      const MAX_MXL_BYTES = 100 * 1024;
+
+      toExchangeInput?.addEventListener("change", () => {
+        const on = Boolean(toExchangeInput.checked);
+        if (exchangeRightsWrap) exchangeRightsWrap.hidden = !on;
+        if (!on && exchangeRightsInput) exchangeRightsInput.checked = false;
+      });
+
+      function apiBase() {
+        const configured = String(
+          window.KlavierExchangeConfig?.apiBase || ""
+        ).trim().replace(/\/$/, "");
+        if (configured) return configured;
+        return new URL("api", window.location.href.replace(/[^/]*$/, ""))
+          .href.replace(/\/$/, "");
+      }
+
+      function foldText(text) {
+        return String(text || "")
+          .normalize("NFD")
+          .replace(/\p{M}/gu, "")
+          .replace(/ß/g, "ss")
+          .replace(/ẞ/g, "ss")
+          .toLowerCase();
+      }
+
+      function composerLastName(composer) {
+        const noise =
+          /^(van|von|de|del|der|den|la|le|di|da|du|des|dos|das|st|ste|jr|sr|ii|iii|iv)$/;
+        const parts = foldText(composer)
+          .split(/[^a-z0-9]+/)
+          .filter((part) => part && !noise.test(part));
+        return parts.length ? parts[parts.length - 1] : "";
+      }
+
+      function titleOverlapRatio(candidateTitle, otherTitle) {
+        const words = (title) =>
+          foldText(title)
+            .split(/[^a-z0-9]+/)
+            .filter((word) => word.length >= 2);
+        const a = words(candidateTitle);
+        const b = new Set(words(otherTitle));
+        if (!a.length || !b.size) return 0;
+        let hits = 0;
+        a.forEach((word) => {
+          if (b.has(word)) hits += 1;
+        });
+        return hits / a.length;
+      }
+
+      function findExistingScore(scores, title, composer) {
+        const last = composerLastName(composer);
+        if (!last) return null;
+        let best = null;
+        (scores || []).forEach((item) => {
+          if (composerLastName(item.composer) !== last) return;
+          const ratio = titleOverlapRatio(title, item.title);
+          if (ratio < 0.5) return;
+          if (!best || ratio > best.ratio) best = { item, ratio };
+        });
+        return best;
+      }
 
       function formatElapsed(ms) {
         const sec = Math.max(0, Math.floor(ms / 1000));
@@ -375,7 +456,108 @@
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
-        return downloadName;
+        return { blob, downloadName };
+      }
+
+      async function publishConvertedToExchange(xmlBlob, title, composer, pdfName) {
+        if (!window.KlavierMxl?.xmlToMxlBlob) {
+          throw new Error("MXL helper failed to load. Refresh and try again.");
+        }
+        let xmlText = await xmlBlob.text();
+        xmlText = String(xmlText || "").replace(/^\uFEFF/, "").trim();
+        if (!/<score-partwise\b|<score-timewise\b/i.test(xmlText)) {
+          throw new Error("Converted file is not valid MusicXML.");
+        }
+
+        const meta = window.KlavierMxl.extractScoreMetadata(xmlText);
+        const finalTitle = String(title || meta.title || "").trim();
+        const finalComposer = String(composer || meta.composer || "").trim();
+        if (finalTitle.length < 2 || finalComposer.length < 2) {
+          throw new Error(
+            "Title and composer are required to publish to the exchange (fill the fields or ensure the MusicXML has them)."
+          );
+        }
+
+        status.textContent = "Checking the exchange library…";
+        const catalogRes = await fetch(apiBase() + "/exchange.php", {
+          cache: "no-store",
+        });
+        if (!catalogRes.ok) {
+          throw new Error("Could not load the exchange catalog.");
+        }
+        const catalog = await catalogRes.json();
+        const scores = Array.isArray(catalog.scores) ? catalog.scores : [];
+        const existing = findExistingScore(scores, finalTitle, finalComposer);
+        if (existing) {
+          return {
+            published: false,
+            skipped: true,
+            message:
+              "Already on the exchange as “" +
+              existing.item.composer +
+              " — " +
+              existing.item.title +
+              "”. Skipped upload.",
+          };
+        }
+
+        status.textContent = "Compressing MusicXML to MXL for the exchange…";
+        const mxl = await window.KlavierMxl.xmlToMxlBlob(
+          xmlText,
+          finalTitle,
+          finalComposer
+        );
+        if (mxl.bytes > MAX_MXL_BYTES) {
+          throw new Error(
+            "Converted MXL is larger than 100 KB, so it cannot be published to the exchange."
+          );
+        }
+
+        const c = filenameSlug(finalComposer);
+        const t = filenameSlug(finalTitle);
+        const filename =
+          c && t
+            ? c + "-" + t + ".mxl"
+            : filenameSlug(String(pdfName || "score").replace(/\.pdf$/i, "")) +
+              ".mxl";
+        const id =
+          "shared-" +
+          Date.now() +
+          "-" +
+          Math.random().toString(36).slice(2, 8);
+
+        const formData = new FormData();
+        formData.append("id", id);
+        formData.append("title", finalTitle);
+        formData.append("composer", finalComposer);
+        formData.append("credit", "Converted from PDF on KlavierXML");
+        formData.append("filename", filename);
+        formData.append("added", new Date().toISOString().slice(0, 10));
+        formData.append(
+          "license",
+          "Uploaded by a community member. Only share files you have rights to distribute."
+        );
+        formData.append("file", mxl.blob, filename);
+
+        status.textContent = "Publishing to the exchange…";
+        const uploadRes = await fetch(apiBase() + "/exchange.php", {
+          method: "POST",
+          body: formData,
+        });
+        const uploadBody = await uploadRes.json().catch(() => ({}));
+        if (!uploadRes.ok) {
+          throw new Error(uploadBody.error || "Could not publish to the exchange.");
+        }
+        return {
+          published: true,
+          skipped: false,
+          message:
+            "Published to the exchange as “" +
+            finalComposer +
+            " — " +
+            finalTitle +
+            "”.",
+        };
       }
 
       fileInput.addEventListener("change", () => {
@@ -388,6 +570,14 @@
         const file = fileInput.files && fileInput.files[0];
         if (!file) {
           status.textContent = "Choose a PDF first.";
+          return;
+        }
+
+        const wantExchange = Boolean(toExchangeInput?.checked);
+        if (wantExchange && !exchangeRightsInput?.checked) {
+          status.textContent =
+            "Confirm that you have the rights to upload and share before publishing to the exchange.";
+          exchangeRightsInput?.focus();
           return;
         }
 
@@ -441,13 +631,34 @@
           const fallbackName =
             (done && done.downloadName) ||
             buildDownloadName(title, composer, file.name);
-          const downloadName = await downloadJob(started.jobId, fallbackName);
+          const downloaded = await downloadJob(started.jobId, fallbackName);
 
           finishProgress();
-          status.textContent =
+          let message =
             "Done. Downloaded " +
-            downloadName +
+            downloaded.downloadName +
             ". Open it in Klavier or share it on the exchange.";
+
+          if (wantExchange) {
+            try {
+              const result = await publishConvertedToExchange(
+                downloaded.blob,
+                title,
+                composer,
+                file.name
+              );
+              message += " " + result.message;
+            } catch (publishErr) {
+              message +=
+                " Exchange upload failed: " +
+                (publishErr && publishErr.message
+                  ? publishErr.message
+                  : "unknown error") +
+                ".";
+            }
+          }
+
+          status.textContent = message;
         } catch (err) {
           hideProgress();
           let message =
