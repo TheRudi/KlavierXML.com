@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>User Manual — KlavierXML</title>
+<meta name="description" content="How to use Klavier: open MusicXML scores, practice with a MIDI keyboard, Drill, playback, and the screen saver.">
+<link rel="canonical" href="https://klavierxml.com/manual.html">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="styles.css?v=nopersonal1">
+<style>
+  .manual-block ul, .manual-block ol {
+    margin: 0 0 0.85rem;
+    padding-left: 1.25rem;
+    color: var(--ivory-soft);
+  }
+  .manual-block li { margin: 0.35rem 0; }
+  .manual-block li strong { color: var(--ivory); font-weight: 560; }
+  .manual-block nav ol { margin-bottom: 0; }
+  .manual-block nav a {
+    color: var(--amber);
+    text-decoration: underline;
+    text-decoration-color: rgba(224, 176, 122, 0.4);
+    text-underline-offset: 0.16em;
+  }
+  .manual-figure { margin: 1.25rem 0 0.25rem; }
+  .manual-figure img, .manual-figure video {
+    width: 100%;
+    max-width: 480px;
+    height: auto;
+    border-radius: 16px;
+    border: 1px solid var(--ink-line);
+    display: block;
+    background: #f4f1ea;
+  }
+  .manual-figure figcaption {
+    margin-top: 0.55rem;
+    max-width: 480px;
+    color: var(--ivory-mute);
+    font-size: 0.9rem;
+  }
+</style>
+</head>
+<body class="page-manual">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header site-header-solid">
+  <a class="wordmark" href="index.html">Klavier<span>XML</span></a>
+  <nav class="nav-links" aria-label="Primary">
+    <a href="index.html#watch">The app</a>
+    <a href="index.html#musicxml">MusicXML</a>
+    <a href="manual.html" aria-current="page">Manual</a>
+    <a href="licenses.html">Licenses</a>
+    <a class="nav-cta" href="index.html#privacy">Privacy</a>
+  </nav>
+</header>
+<main id="main" class="legal-main">
+  <header class="legal-hero">
+    <p class="section-kicker">The app</p>
+    <h1 class="legal-title">User manual</h1>
+    <p class="legal-lede">Klavier is German for piano. It is a piano practice app for iPad and iPhone. Open a MusicXML score, follow it on the sheet and on an on-screen keyboard, and play it on a MIDI keyboard — or let Klavier play it for you.</p>
+  </header>
+<section class="legal-block manual-block">
+<h2>Contents</h2>
+  <ol>
+    <li><a href="#start">Getting started</a></li>
+    <li><a href="#screen">The screen</a></li>
+    <li><a href="#scores">Opening scores</a></li>
+    <li><a href="#practice">Practicing</a></li>
+    <li><a href="#ear">Play by Ear</a></li>
+    <li><a href="#drill">Drill</a></li>
+    <li><a href="#history">Practice history</a></li>
+    <li><a href="#recordings">Recordings</a></li>
+    <li><a href="#playback">Listening to the score</a></li>
+    <li><a href="#midi">Connecting a MIDI keyboard</a></li>
+    <li><a href="#sheet">The sheet</a></li>
+    <li><a href="#print">Printing</a></li>
+    <li><a href="#screensaver">Screen saver</a></li>
+    <li><a href="#about">About and licenses</a></li>
+  </ol>
+</section>
+
+<section class="legal-block manual-block">
+<h2 id="start">Getting started</h2>
+<p>Klavier runs on iPad and iPhone (iPadOS or iOS 17.7 or later). There is no account and no sign-in.</p>
+<p>The first time you open the app, a short splash screen appears. Tap it to continue. Klavier then opens the most recent score you used, or one of the two pieces included with the app: <strong>Happy Birthday</strong> and <strong>Ode to Joy</strong>.</p>
+<p>You can practice with the on-screen keyboard alone. A MIDI keyboard is optional. Connect one over USB or Bluetooth when you want Klavier to listen to what you play.</p>
+<p>On a narrow screen, such as an iPhone, Print, Practice History, Recordings, About, and Full Screen move into the <strong>More</strong> button (the circle with three dots) at the right of the top bar. The other controls stay in the bar.</p>
+</section>
+
+<section class="legal-block manual-block">
+<h2 id="screen">The screen</h2>
+<p>The top bar stays visible until you go full screen. From left to right:</p>
+<ul>
+  <li><strong>MIDI status.</strong> A colored dot and the name of the connected keyboard. Tap it to see connections or pair Bluetooth. Green means a keyboard is connected, gray means none, and orange means MIDI reported a problem.</li>
+  <li><strong>Speaker.</strong> Opens two switches, <strong>iPad</strong> (or <strong>iPhone</strong>) and <strong>Piano</strong>. They choose native piano sound, the iPad’s sound font through the piano speaker, or both. The three setups are under Listening to the score. A red dot on the button means the piano speaker is off.</li>
+  <li><strong>Playback</strong> (the dial). Speed, reverb, and piano sound.</li>
+  <li><strong>Play.</strong> Plays the score from the current chord. Tap again to pause.</li>
+  <li><strong>Play by Ear.</strong> The three notes. Opens a blank grand staff and writes down what you play.</li>
+  <li><strong>Record.</strong> The red circle records what you play. During Play by Ear it is already recording; tap it to stop the take.</li>
+  <li><strong>Played today.</strong> In the middle of the bar, when Pro Mode is off: how long you have played today, such as <span class="legal-muted">12 min</span> or <span class="legal-muted">1 h 5 min</span>. It adds up across every song. Pro Mode leaves that spot empty. Full screen hides the whole bar.</li>
+  <li><strong>Settings</strong> (the sliders). How the sheet, keyboard, Drill, and screen saver behave.</li>
+  <li><strong>Scores</strong> (the folder). Open a file, an included piece, or a recent score.</li>
+  <li><strong>Practice History</strong> (the chart). Time practiced, plays, and wrong keys, by song or by day.</li>
+  <li><strong>Recordings</strong> (the tape). Play, share, or delete saved performances.</li>
+  <li><strong>Print.</strong> Print the open score on A4 or US Letter.</li>
+  <li><strong>About</strong> (the info button). Version and third-party licenses.</li>
+  <li><strong>Full screen.</strong> Hides the top bar, the status bar, and the home indicator so the sheet and keyboard use the whole screen. Tap the button in the upper-right corner to bring the bar back.</li>
+</ul>
+<p>Below the bar is the sheet. Under the sheet is a thin progress line, or the Drill bar when Drill is on. At the bottom is the on-screen piano, unless Pro Mode is on.</p>
+<p>The current chord is highlighted on the sheet and on the keys. Right-hand notes are blue. Left-hand notes are orange. A green mark shows a key you are holding that belongs to the chord. A wrong key turns red. With note names on, the names sit on the keys and on the sheet.</p>
+<figure class="manual-figure">
+  <img src="Screenshots/01-sheet.png" alt="Ode to Joy on the practice screen, with the current note highlighted in green and falling bars above the keyboard.">
+  <figcaption>The practice screen. The green box is the current note. Orange bars are the left hand, blue bars the right. The key under the blue bar is labeled because note names are on.</figcaption>
+</figure>
+</section>
+
+<section class="legal-block manual-block">
+<h2 id="scores">Opening scores</h2>
+<p>Klavier opens MusicXML (<span class="legal-muted">.xml</span>, <span class="legal-muted">.musicxml</span>) and compressed MusicXML (<span class="legal-muted">.mxl</span>).</p>
+<h3>From a file</h3>
+<ol>
+  <li>Tap the folder button.</li>
+  <li>Tap <strong>Open MusicXML / MXL…</strong></li>
+  <li>Choose a file from Files, iCloud Drive, or another app.</li>
+</ol>
+<p>If the file has no real title, Klavier uses the file name.</p>
+<h3>Save a copy on this device</h3>
+<p>With a score open, the same menu offers <strong>Save on This iPad</strong> (or iPhone). That copies the file into Files › On My iPad › Klavier, or the same place on iPhone. If the open score is already stored there, the row shows a checkmark.</p>
+<h3>Included pieces</h3>
+<p>The same menu lists <strong>Included</strong> scores that ship with the app. Each row shows the title, the composer underneath, and <strong>On this iPad</strong> (or iPhone) at the right. Tap one to open it.</p>
+<h3>Recent</h3>
+<p>Scores you open are remembered under <strong>Recent</strong>, newest first, up to the last 20. Each row shows the title, the composer underneath, and a note at the right:</p>
+<ul>
+  <li><strong>On this iPad</strong> (or iPhone) — the file is here. Tap the row to open it.</li>
+  <li><strong>Not on this iPad</strong> (or iPhone) — the file has been moved or deleted from this device.</li>
+  <li><strong>KlavierXML</strong> — the song was written in this app by Play by Ear, so it can be deleted. The row has a trash button.</li>
+</ul>
+<p>Touch and hold a row, or swipe it to the side, and tap <strong>Remove</strong> to drop it from the list. That does not delete the file, except for a KlavierXML song: its trash button deletes the file after you confirm. <strong>Clear History</strong> removes the whole list and does not delete the files.</p>
+</section>
+
+<section class="legal-block manual-block">
+<h2 id="practice">Practicing</h2>
+<p>The highlighted chord is the one Klavier is waiting for.</p>
+<h3>Without a keyboard</h3>
+<ul>
+  <li>Tap a note or chord on the sheet to jump there.</li>
+  <li>Swipe the sheet. A short swipe steps one chord. A longer, faster swipe travels further.</li>
+  <li>Use the left and right arrows above the on-screen keyboard to step one chord at a time.</li>
+</ul>
+<p>Stepping, tapping, or swiping to another chord stops playback.</p>
+<h3>With a MIDI keyboard</h3>
+<p>Play every note of the highlighted chord. When the chord is complete, Klavier moves to the next one. You can hold the notes together or play them one after another, as long as the notes of the chord are down together at the end.</p>
+<p>Keys that are not part of the chord are marked wrong. In Drill, those keystrokes are counted. Time you spend playing is added to today’s total and to Practice History. A pause longer than a couple of seconds counts as a break and is not added. Play by Ear is the exception: the whole take is counted, pauses included.</p>
+<h3>On-screen keyboard</h3>
+<p>The piano shows the notes of the current chord. Upcoming notes can fall onto their keys as bars. Turn <strong>Falling Bars</strong> off in Settings if you only want the keys.</p>
+<p><strong>88 Keys</strong> always shows the full piano. <strong>61 Keys</strong> shows C2 to C7. <strong>Fit to Score</strong> shows only the octaves the piece uses, from C to C. On iPhone, a new install starts with Fit to Score and slightly smaller notes.</p>
+<p><strong>Pro Mode</strong> hides the keyboard so the sheet fills the screen. It also hides today’s practice time. Drill, playback, and a connected MIDI keyboard still work.</p>
+<h3>Portrait and landscape</h3>
+<p>Turn the device to change the sheet.</p>
+<ul>
+  <li><strong>Landscape.</strong> The music is one long line. The current chord stays centered as you move.</li>
+  <li><strong>Portrait.</strong> The music wraps into rows, like a page. Moving to another row turns the page. <strong>Rows in Portrait</strong> in Settings chooses how many rows fill the screen in Pro Mode (from 2 to 6). With the keyboard shown, the notes keep that size, so fewer rows fit.</li>
+</ul>
+<p>Pinch the sheet to resize it. In landscape this changes the note size. In portrait it changes how many rows fit.</p>
+</section>
+
+<section class="legal-block manual-block">
+<h2 id="ear">Play by Ear</h2>
+<p>Play by Ear starts from an empty grand staff and writes the music as you play it on a MIDI keyboard.</p>
+<figure class="manual-figure">
+  <img src="Screenshots/09-play-by-ear.png" alt="Play by Ear with an empty grand staff titled Song 1, composer Amadeus, a 61-key keyboard, and the record button already lit.">
+  <figcaption>A new take. The title starts at Song 1 and the composer at Amadeus. The red button is already recording.</figcaption>
+</figure>
+<figure class="manual-figure">
+  <video controls playsinline preload="metadata" src="Videos/play-by-ear.mov" aria-label="Starting Play by Ear."></video>
+  <figcaption>Starting a take. The keyboard shortens to 61 keys and the record light comes on.</figcaption>
+</figure>
+<ol>
+  <li>Tap <strong>Play by Ear</strong> (the three notes, between Play and Record).</li>
+  <li>Play. Middle C and above are written on the treble staff. Notes below middle C go on the bass staff. Nothing you play is marked wrong, and the falling bars stay off for the take.</li>
+  <li>The keyboard starts at 61 keys, C2 to C7. Play below C2 or above C7 and it grows outward to the next C, the same way Fit to Score chooses its ends. It stays that wide until the take is over.</li>
+  <li>Tap the red record button to stop. Klavier asks for a title and a composer. The title offered is Song 1, then Song 2, and so on. The composer offered is the last one you saved from Play by Ear, or Amadeus the first time.</li>
+  <li><strong>Save</strong> writes a MusicXML file into Files › On My iPad › Klavier (or On My iPhone) and keeps the practice time under that title. <strong>Discard</strong> throws the song away.</li>
+</ol>
+<p>The whole take counts as practice time, including the pauses between phrases. Today’s total in the top bar still rounds to the minute, so a short take can show as 0 min. Practice History keeps the seconds.</p>
+<p>A saved song is marked <strong>KlavierXML</strong> in Scores. That mark means the file was written by this app and can be deleted. Tap the trash button in the top bar, or <strong>Delete This Play by Ear Song</strong> in Scores, and confirm. The file is removed. The time you practiced stays in Practice History under the name <strong>Play by Ear</strong>.</p>
+</section>
+
+<section class="legal-block manual-block">
+<h2 id="drill">Drill</h2>
+<p>Turn <strong>Drill</strong> on in Settings. The thin progress line becomes a practice bar. You can also choose <strong>By Measure</strong> or <strong>By Chord</strong> there. The same choice is on the bar: tap the <strong>Measure</strong> or <strong>Chord</strong> label at the start of the range to switch. The music you had selected stays selected.</p>
+<h3>The range</h3>
+<p>Drag the two ends of the slider to choose where to practice. The chevrons beside each end move that end by one measure, or one chord. The button with the left-and-right arrow, at the right of the bar, selects the whole piece again. A green tick marks where you are. Brackets appear on the sheet only when the range is narrower than the whole piece. The same brackets can be set from the piano, with the lowest key on the left and the highest key on the right.</p>
+<p>Klavier loops that passage. When you play the last chord, it stays there briefly, then jumps back to the first. Playing on during that pause goes back right away. Playback with Drill on repeats the practice range until you pause. If the current chord is outside the range, playback starts at the beginning of the range.</p>
+<p>A sideways swipe stops at the brackets. Playing through the range still loops. Tapping a chord on the sheet can still jump outside the brackets.</p>
+<p>On the engraved sheet, tap the lasso and draw a loop around the measures (or chords) you want. Klavier sets the range to what you circled and leaves lasso mode. The hint at the top of the sheet tells you whether to circle measures or chords.</p>
+<h3>Setting the range from the piano</h3>
+<p>With Drill on, the two end keys of an 88-key piano set the brackets, so you can mark a passage without leaving the keyboard.</p>
+<ul>
+  <li><strong>Low left</strong> is the bottom key, A0, at the far left.</li>
+  <li><strong>High right</strong> is the top key, C8, at the far right.</li>
+  <li>The black key immediately beside that top key, B7, shortens the range.</li>
+</ul>
+<p>These keys still work when Fit to Score hides them on the screen. Klavier does not treat them as music: they do not move the highlight, and they are not counted as wrong keys.</p>
+<p><strong>Set the brackets.</strong> Hold the low-left key and tap the high-right key, or press the two together. The start is where you are now: the current measure when the bar says Measure, or the current chord when it says Chord. The end is one measure further. In chord steps that takes in every chord from where you are through the last chord of the next measure. Brackets appear on the sheet, and the slider moves to match.</p>
+<p><strong>Make it longer.</strong> Hold the low-left key and tap the high-right key again. Each tap adds one step at the end. A step is one measure when the bar says Measure, and one chord when it says Chord. Keep tapping to walk the end toward the close of the piece. It stops at the last measure or chord.</p>
+<p><strong>Make it shorter.</strong> Hold the low-left key and tap the black key just beside the high-right key. Each tap moves the end one step back toward the start. The end will not pass the start, so the shortest range is the single measure or chord you began with. If the range already covers the whole piece, this tap brings the end back in and the brackets show again.</p>
+<p><strong>Clear it.</strong> Let go, then strike the low-left key twice, quickly. The brackets disappear and the whole piece is selected again. One tap of that key leaves the range as it is. If the two taps are far apart, nothing is cleared; strike them closer together.</p>
+<p>A range you already set with the slider or the lasso is kept. The next low-left and high-right press adds one measure or chord at the end. To begin again from the chord you are on, clear the range with the double tap, then press the pair once more.</p>
+<h3>Hands</h3>
+<p>The hand buttons choose the left hand, the right hand, or both. At least one hand stays on. A hand you turn off is skipped: Klavier waits only for the other hand’s notes, and chords that have none of those notes are passed over. The keys highlight only the hand you are practicing.</p>
+<h3>Wrong keys</h3>
+<p>The number at the left of the bar is how many wrong keys you have struck in this pass. It is green at zero and red otherwise. Tap the number, when it is not zero, to start the count over.</p>
+<p>When you reach the end of the range, the count stays on screen until you play the first chord of the next pass. The hand buttons react to that pass: a clean pass is applauded, and a rough one is marked accordingly. Stepping backward by hand starts the count over.</p>
+</section>
+
+<section class="legal-block manual-block">
+<h2 id="history">Practice history</h2>
+<p>Tap the chart button (or <strong>Practice History</strong> in More). Songs you play on a MIDI keyboard are listed with the time practiced, complete plays, partial plays, and wrong keys.</p>
+<p><strong>By Song</strong> adds up every day for each piece: time, plays, last day practiced, the piano you used, and the file name. <strong>By Day</strong> lists that day’s songs, newest day first. The top of the list shows the total practice time.</p>
+<p>For an ordinary score, practice time is the gaps between notes, as long as the next note comes within a couple of seconds. A longer pause is a break and is not counted. A Play by Ear take is different: the clock runs from the first note until you stop, pauses included. A wrong key is a key that was not in the chord being played. Play by Ear does not count wrong keys.</p>
+<p>If you delete a Play by Ear song, its time remains, under the name Play by Ear. A song you saved keeps the title you gave it.</p>
+<p><strong>Reset All Data…</strong> deletes the history. You can save it as a CSV file first, or reset without saving. If the save fails, nothing is deleted.</p>
+<p>The time in the middle of the top bar is only today. Practice History keeps earlier days as well.</p>
+</section>
+
+<section class="legal-block manual-block">
+<h2 id="recordings">Recordings</h2>
+<p>Tap the red record button next to Play. Klavier records the performance, including notes from a connected MIDI keyboard. Tap the button again to stop. The recording is kept, and the list opens.</p>
+<p>Open <strong>Recordings</strong> from the tape button, or from More. The newest 10 are kept. Each row shows the title, composer, date, and length.</p>
+<ul>
+  <li><strong>Play</strong> and <strong>Stop</strong> listen to it with the current piano sound and reverb.</li>
+  <li><strong>MIDI</strong> shares a MIDI file for other apps.</li>
+  <li><strong>M4A</strong> shares an audio file to listen elsewhere.</li>
+  <li>The trash button, or a swipe, deletes that recording.</li>
+</ul>
+</section>
+
+<section class="legal-block manual-block">
+<h2 id="playback">Listening to the score</h2>
+<p>Tap <strong>Play</strong> to hear the score from the current chord. The highlight and the on-screen keyboard follow along. Tap pause to stop. While playback is running, the screen saver waits.</p>
+<figure class="manual-figure">
+  <video controls playsinline preload="metadata" src="Videos/playback.mov" aria-label="Ode to Joy playing. The green highlight moves along the staff."></video>
+  <figcaption>Play follows Ode to Joy. The green band is the chord being heard, and the matching key lights up.</figcaption>
+</figure>
+<h3>Where the sound comes from</h3>
+<p>The speaker button chooses what you hear. The two switches make three setups, and Klavier remembers them.</p>
+<ol>
+  <li><strong>Native piano sound.</strong> Leave <strong>Piano</strong> on and turn the iPad (or iPhone) off. You hear the instrument’s own speaker.</li>
+  <li><strong>Sound font through the piano speaker.</strong> Turn <strong>Piano</strong> off. Klavier asks the instrument to stay quiet, and the iPad plays the sound font chosen below through the piano speaker. A red dot on the speaker button means the piano is off.</li>
+  <li><strong>Both.</strong> Leave <strong>Piano</strong> on and turn the iPad on. You hear the instrument and the sound font together.</li>
+</ol>
+<p>Open Playback (the dial) to change how the sound font plays. These settings are remembered.</p>
+<ul>
+  <li><strong>Speed.</strong> From half speed to one and a half times the written tempo, in steps of 5%. 100% is as written.</li>
+  <li><strong>Reverb.</strong> Dry, Room, or Concert Hall.</li>
+  <li><strong>Piano Sound.</strong>
+    <ul>
+      <li>Classic Grand — a Yamaha grand</li>
+      <li>Compact Upright — a light Kawai upright</li>
+      <li>Studio Upright — a multi-layer Kawai upright</li>
+      <li>Concert Grand — a Yamaha Disklavier Pro, the most detailed</li>
+    </ul>
+  </li>
+</ul>
+<p>The larger sounds take a moment longer to load the first time you choose them. The speaker button and Recordings use the same piano and reverb.</p>
+</section>
+
+<section class="legal-block manual-block">
+<h2 id="midi">Connecting a MIDI keyboard</h2>
+<p>Tap the MIDI status in the top bar.</p>
+<h3>USB</h3>
+<p>Plug the keyboard into the iPad or iPhone with a USB cable (a camera adapter or a USB-C port, depending on the device). It should appear in the list. Tap <strong>Refresh</strong> if it does not.</p>
+<h3>Bluetooth</h3>
+<p>Tap <strong>Bluetooth MIDI…</strong> and pair the keyboard on Apple’s pairing screen. Tap Done when you are finished. Klavier asks for Bluetooth only for this.</p>
+<h3>While you play</h3>
+<p>The dot flashes when MIDI messages arrive. A short notice appears when a keyboard connects or disconnects. Several keyboards can be connected at once; the status then shows how many.</p>
+<p>If a keyboard is unplugged in the middle of a chord, Klavier releases the notes it was holding so the chord does not stay stuck. A keyboard connecting also wakes the screen saver.</p>
+</section>
+
+<section class="legal-block manual-block">
+<h2 id="sheet">The sheet</h2>
+<p>Open Settings (the sliders). Everything in this panel is remembered.</p>
+<figure class="manual-figure">
+  <img src="Screenshots/03-settings.png" alt="The Settings panel over the sheet, with Pro Mode, keyboard range, falling bars, and Drill.">
+  <figcaption>Settings, open from the sliders: Pro Mode, keyboard range, falling bars, and Drill.</figcaption>
+</figure>
+<h3>Renderer</h3>
+<ul>
+  <li><strong>Engraved</strong> draws the score as published sheet music, including slurs, lyrics, and fingerings when the file has them.</li>
+  <li><strong>Simple</strong> draws a lighter notation if you prefer it, or when an engraved file cannot be shown. Switch to Simple from the message on the sheet if engraving fails, and you can keep practicing.</li>
+</ul>
+<h3>Engraved look</h3>
+<ul>
+  <li><strong>Size</strong> and <strong>Rows in Portrait</strong> match what a pinch does.</li>
+  <li><strong>Paper</strong>, <strong>Sepia</strong>, or <strong>White</strong>. On Sepia you can add a <strong>Dog Ear</strong> — a folded corner, worn edges, and now and then a penciled note, sharp, or rest — and <strong>Coffee Stains &amp; Scribbles</strong>, faint cup rings and light pencil marks. Both stay put for a given score. They do not jump when Play by Ear adds the next chord.</li>
+  <li><strong>Fingerings</strong>, <strong>Slurs</strong>, and <strong>Lyrics</strong> can each be hidden. These switches apply to the engraved sheet.</li>
+</ul>
+<h3>What to show</h3>
+<ul>
+  <li><strong>Title</strong>, <strong>Composer</strong>, and <strong>Measure Numbers</strong>.</li>
+  <li><strong>Chord Symbols</strong>. Turning this off also hides every note name: on the sheet and on the keys.</li>
+  <li><strong>Current Note Names</strong> labels the chord you are on. <strong>Upcoming Note Names</strong> labels the next one as well, and only appears when current names are on.</li>
+  <li><strong>German Note Names</strong> uses H instead of B, and the usual German sharp and flat names.</li>
+</ul>
+</section>
+
+<section class="legal-block manual-block">
+<h2 id="print">Printing</h2>
+<p>Tap the printer, then choose <strong>A4</strong> or <strong>US Letter</strong>. On a narrow screen, both choices are under More. Klavier lays the score out on pages and opens the print dialog. Printing uses the engraved look, including the show and hide choices from Settings. Wait for the dialog; a long score takes a moment to prepare.</p>
+</section>
+
+<section class="legal-block manual-block">
+<h2 id="screensaver">Screen saver</h2>
+<p>After a few minutes with no touches and no MIDI keys, the screen goes black and shows the title, the composer, and the piano. <strong>Start After</strong> in Settings sets the wait from 5 to 45 minutes, in steps of 5. The default is 5 minutes.</p>
+<p>Each appearance fades in at a new place, so one spot on the screen is not lit the whole time. If you have opened scores before, it cycles through the last five, newest first. The piano name is the connected MIDI keyboard when one is attached, and otherwise the playback piano you selected.</p>
+<p>Tap the screen, play a key, or connect a keyboard to wake it. The key that wakes it does not count as a played note. While a score is playing back, the screen saver does not start.</p>
+<p>Once the screen saver is up, the device may lock on its own, following the Auto-Lock time in Settings, so a forgotten device does not stay lit.</p>
+</section>
+
+<section class="legal-block manual-block">
+<h2 id="about">About and licenses</h2>
+<p>Tap the info button for the version and the third-party software and piano sample licenses. The splash screen points to the same texts.</p>
+<p>Klavier does not collect an account, analytics, or the notes you play. Scores you open, your practice history, and your recordings stay on the device. Bluetooth is used only for MIDI. Details are in the <a href="index.html#privacy">privacy</a> section.</p>
+
+<p class="legal-muted">© 2026 Rüdiger Lueg</p>
+</section>
+</main>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <p class="footer-brand">KlavierXML</p>
+    <p>
+      <a href="index.html">Home</a>
+      ·
+      <a href="manual.html">Manual</a>
+      ·
+      <a href="licenses.html">Licenses</a>
+      · © <span id="year"></span> Rüdiger Lueg
+    </p>
+    <p class="contact-line">
+      Contact:
+      <a href="mailto:rudilueg@gmail.com">rudilueg@gmail.com</a>
+    </p>
+    <p class="footer-highlands">Highlands</p>
+  </div>
+</footer>
+<script src="app.js" defer></script>
+</body>
+</html>

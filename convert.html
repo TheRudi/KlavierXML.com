@@ -10,7 +10,7 @@
     />
     <link rel="canonical" href="https://klavierxml.com/convert.html" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=convex1" />
+    <link rel="stylesheet" href="styles.css?v=nopersonal1" />
   </head>
   <body class="page-exchange">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -20,12 +20,13 @@
       <nav class="nav-links" aria-label="Primary">
         <a href="index.html#musicxml">MusicXML</a>
         <a href="index.html#get-songs">Get songs</a>
+        <a href="exchange.html">Exchange</a>
         <a href="convert.html" aria-current="page">PDF2XML</a>
-        <a href="licenses.html">Licenses</a>
+        <a href="manual.html">Manual</a>
+        <a href="references.html">References</a>
         <a class="nav-cta" href="index.html#privacy">Privacy</a>
       </nav>
     </header>
-    <p class="site-disclaimer" role="note">Only for personal use</p>
 
     <main id="main" class="exchange-main">
       <header class="legal-hero">
@@ -33,35 +34,42 @@
         <h1 class="legal-title">PDF2XML on KlavierXML.com</h1>
         <p class="legal-lede">
           Upload a score PDF. KlavierXML converts it to MusicXML with Audiveris
-          so you can open it in the Klavier app.
+          so you can open it in the Klavier app or share it on the
+          <a href="exchange.html">MusicXML exchange</a>.
         </p>
       </header>
 
       <section class="exchange-panel" aria-labelledby="convert-heading">
         <div class="exchange-panel-copy">
           <p class="section-kicker">Convert</p>
-          <h2 id="convert-heading">Score PDF → MusicXML</h2>
+          <h2 id="convert-heading">Score PDF or JPG → MusicXML</h2>
           <p>
-            Use a scanned score PDF, or a PDF you built from JPG pages (see
-            <a href="index.html#get-songs">How to get songs</a>, option 04).
-            Conversion can take one to a few minutes. Please only upload music
-            you have the right to convert.
+            Upload one score PDF, or several page images (JPG/PNG) in page
+            order. Conversion can take one to a few minutes. Please only upload
+            music you have the right to convert.
+          </p>
+          <p>
+            For best results, each page image should be about
+            <strong>1500&nbsp;px</strong> wide or more (phone photos of sheet
+            music are fine if they stay sharp). Tiny page images inside a PDF
+            make the converter guess notes and produce inaccurate MusicXML.
           </p>
         </div>
 
         <form class="upload-form" id="pdf2xml-form">
           <label class="file-picker" for="pdf-file">
-            <span class="file-picker-label">PDF file</span>
+            <span class="file-picker-label">PDF or page images</span>
             <input
               id="pdf-file"
               name="pdf"
               type="file"
-              accept=".pdf,application/pdf"
+              accept=".pdf,.jpg,.jpeg,.png,.tif,.tiff,application/pdf,image/jpeg,image/png,image/tiff"
+              multiple
               required
             />
             <span class="file-picker-hint"
-              >Browse for a .pdf score · multi-page scans welcome · max
-              40&nbsp;MB</span
+              >One .pdf, or several JPG/PNG pages in order · max 40&nbsp;MB
+              total · up to 40 pages</span
             >
             <span class="file-picker-name" id="pdf-file-name">No file chosen</span>
           </label>
@@ -90,6 +98,18 @@
               />
             </label>
           </div>
+
+          <label class="upload-rights">
+            <input id="pdf-to-exchange" name="to_exchange" type="checkbox" />
+            <span
+              >Also upload to the MusicXML exchange if this score is not already
+              there</span
+            >
+          </label>
+          <label class="upload-rights" id="pdf-exchange-rights-wrap" hidden>
+            <input id="pdf-exchange-rights" name="exchange_rights" type="checkbox" />
+            <span>I have the rights to upload and share</span>
+          </label>
 
           <button class="btn btn-primary" type="submit" id="pdf2xml-submit">
             Convert to MusicXML
@@ -133,7 +153,56 @@
             <li>
               <span>Open the file from the Klavier app.</span>
             </li>
+            <li>
+              <span>
+                Or upload it to the
+                <a href="exchange.html">MusicXML exchange</a> so others can
+                download it.
+              </span>
+            </li>
           </ol>
+        </div>
+      </section>
+
+      <section class="exchange-panel" aria-labelledby="xml-links-heading">
+        <div class="exchange-panel-copy">
+          <p class="section-kicker">More MusicXML</p>
+          <h2 id="xml-links-heading">Edit and find MusicXML</h2>
+          <ul class="get-steps">
+            <li>
+              <span>
+                <a
+                  href="https://www.noteflight.com/"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  >Noteflight</a
+                >
+                — free online editor for MusicXML
+              </span>
+            </li>
+            <li>
+              <span>
+                <a
+                  href="https://musescore.com/sheetmusic/interactive"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  >MuseScore interactive scores</a
+                >
+                — browse interactive MusicXML sheet music
+              </span>
+            </li>
+            <li>
+              <span>
+                <a
+                  href="https://musescore.com/openscore"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  >OpenScore</a
+                >
+                — public-domain MusicXML scores
+              </span>
+            </li>
+          </ul>
         </div>
       </section>
     </main>
@@ -146,7 +215,11 @@
           ·
           <a href="index.html#get-songs">Get songs</a>
           ·
-          <a href="licenses.html">Licenses</a>
+          <a href="exchange.html">Exchange</a>
+          ·
+          <a href="manual.html">Manual</a>
+          ·
+          <a href="references.html">References</a>
           · © <span id="year"></span> Rüdiger Lueg
         </p>
         <p class="contact-line">
@@ -157,6 +230,8 @@
       </div>
     </footer>
 
+    <script src="exchange-config.js?v=preview2" defer></script>
+    <script src="mxl-zip.js?v=meta3" defer></script>
     <script>
       document.getElementById("year").textContent = String(
         new Date().getFullYear()
@@ -171,12 +246,79 @@
       const progressBar = document.getElementById("pdf2xml-progressbar");
       const progressFill = document.getElementById("pdf2xml-progress-fill");
       const progressPct = document.getElementById("pdf2xml-progress-pct");
+      const toExchangeInput = document.getElementById("pdf-to-exchange");
+      const exchangeRightsWrap = document.getElementById(
+        "pdf-exchange-rights-wrap"
+      );
+      const exchangeRightsInput = document.getElementById("pdf-exchange-rights");
 
       let progressTimer = null;
 
       // Planning ETA from live Noten batch (~0.9 s/measure measured; 1.3 s used for ETA).
       const SEC_PER_MEASURE = 1.3;
       const MEASURES_PER_PDF_BYTE = 443 / 2847184;
+      const MAX_MXL_BYTES = 100 * 1024;
+
+      toExchangeInput?.addEventListener("change", () => {
+        const on = Boolean(toExchangeInput.checked);
+        if (exchangeRightsWrap) exchangeRightsWrap.hidden = !on;
+        if (!on && exchangeRightsInput) exchangeRightsInput.checked = false;
+      });
+
+      function apiBase() {
+        const configured = String(
+          window.KlavierExchangeConfig?.apiBase || ""
+        ).trim().replace(/\/$/, "");
+        if (configured) return configured;
+        return new URL("api", window.location.href.replace(/[^/]*$/, ""))
+          .href.replace(/\/$/, "");
+      }
+
+      function foldText(text) {
+        return String(text || "")
+          .normalize("NFD")
+          .replace(/\p{M}/gu, "")
+          .replace(/ß/g, "ss")
+          .replace(/ẞ/g, "ss")
+          .toLowerCase();
+      }
+
+      function composerLastName(composer) {
+        const noise =
+          /^(van|von|de|del|der|den|la|le|di|da|du|des|dos|das|st|ste|jr|sr|ii|iii|iv)$/;
+        const parts = foldText(composer)
+          .split(/[^a-z0-9]+/)
+          .filter((part) => part && !noise.test(part));
+        return parts.length ? parts[parts.length - 1] : "";
+      }
+
+      function titleOverlapRatio(candidateTitle, otherTitle) {
+        const words = (title) =>
+          foldText(title)
+            .split(/[^a-z0-9]+/)
+            .filter((word) => word.length >= 2);
+        const a = words(candidateTitle);
+        const b = new Set(words(otherTitle));
+        if (!a.length || !b.size) return 0;
+        let hits = 0;
+        a.forEach((word) => {
+          if (b.has(word)) hits += 1;
+        });
+        return hits / a.length;
+      }
+
+      function findExistingScore(scores, title, composer) {
+        const last = composerLastName(composer);
+        if (!last) return null;
+        let best = null;
+        (scores || []).forEach((item) => {
+          if (composerLastName(item.composer) !== last) return;
+          const ratio = titleOverlapRatio(title, item.title);
+          if (ratio < 0.5) return;
+          if (!best || ratio > best.ratio) best = { item, ratio };
+        });
+        return best;
+      }
 
       function formatElapsed(ms) {
         const sec = Math.max(0, Math.floor(ms / 1000));
@@ -340,7 +482,7 @@
         );
       }
 
-      async function downloadJob(jobId, fallbackName) {
+      async function fetchJobXml(jobId, fallbackName) {
         const response = await fetch(
           "api/convert.php?job=" +
             encodeURIComponent(jobId) +
@@ -355,7 +497,10 @@
         const disposition = response.headers.get("content-disposition") || "";
         const match = /filename=\"([^\"]+)\"/i.exec(disposition);
         if (match) downloadName = match[1];
+        return { blob, downloadName };
+      }
 
+      function triggerBrowserDownload(blob, downloadName) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -364,24 +509,237 @@
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
-        return { blob, downloadName };
+      }
+
+      function musicXmlUnusableReason(xmlText) {
+        const text = String(xmlText || "").replace(/^\uFEFF/, "").trim();
+        if (!/<score-partwise\b|<score-timewise\b/i.test(text)) {
+          return "missing score-partwise/score-timewise root";
+        }
+        const pitches = (text.match(/<pitch\b/gi) || []).length;
+        if (pitches < 8) {
+          return "too few pitched notes (" + pitches + ")";
+        }
+        if (!/<clef\b/i.test(text)) {
+          return "no clefs recognized";
+        }
+        if (!/<measure\b/i.test(text)) {
+          return "no measures";
+        }
+        const partRe = /<part\b[^>]*>([\s\S]*?)<\/part>/gi;
+        let match;
+        while ((match = partRe.exec(text))) {
+          const body = match[1] || "";
+          const partPitches = (body.match(/<pitch\b/gi) || []).length;
+          const partClefs = (body.match(/<clef\b/gi) || []).length;
+          if (partPitches > 0 && partClefs === 0) {
+            return "a part has pitched notes but no clef (OMR failed on staff headers)";
+          }
+        }
+        return null;
+      }
+
+      async function publishConvertedToExchange(xmlBlob, title, composer, pdfName) {
+        if (!window.KlavierMxl?.xmlToMxlBlob) {
+          throw new Error("MXL helper failed to load. Refresh and try again.");
+        }
+        let xmlText = await xmlBlob.text();
+        xmlText = String(xmlText || "").replace(/^\uFEFF/, "").trim();
+        const unusable = musicXmlUnusableReason(xmlText);
+        if (unusable) {
+          throw new Error(
+            "Converted file is not usable MusicXML: " + unusable + "."
+          );
+        }
+
+        const meta = window.KlavierMxl.extractScoreMetadata(xmlText);
+        const finalTitle = String(title || meta.title || "").trim();
+        const finalComposer = String(composer || meta.composer || "").trim();
+        if (finalTitle.length < 2 || finalComposer.length < 2) {
+          throw new Error(
+            "Title and composer are required to publish to the exchange (fill the fields or ensure the MusicXML has them)."
+          );
+        }
+
+        status.textContent = "Checking the exchange library…";
+        const catalogRes = await fetch(apiBase() + "/exchange.php", {
+          cache: "no-store",
+        });
+        if (!catalogRes.ok) {
+          throw new Error("Could not load the exchange catalog.");
+        }
+        const catalog = await catalogRes.json();
+        const scores = Array.isArray(catalog.scores) ? catalog.scores : [];
+        const existing = findExistingScore(scores, finalTitle, finalComposer);
+        if (existing) {
+          return {
+            published: false,
+            skipped: true,
+            message:
+              "Already on the exchange as “" +
+              existing.item.composer +
+              " — " +
+              existing.item.title +
+              "”. Skipped upload.",
+          };
+        }
+
+        status.textContent = "Compressing MusicXML to MXL for the exchange…";
+        const mxl = await window.KlavierMxl.xmlToMxlBlob(
+          xmlText,
+          finalTitle,
+          finalComposer
+        );
+        if (mxl.bytes > MAX_MXL_BYTES) {
+          throw new Error(
+            "Converted MXL is larger than 100 KB, so it cannot be published to the exchange."
+          );
+        }
+
+        const c = filenameSlug(finalComposer);
+        const t = filenameSlug(finalTitle);
+        const filename =
+          c && t
+            ? c + "-" + t + ".mxl"
+            : filenameSlug(String(pdfName || "score").replace(/\.pdf$/i, "")) +
+              ".mxl";
+        const id =
+          "shared-" +
+          Date.now() +
+          "-" +
+          Math.random().toString(36).slice(2, 8);
+
+        const formData = new FormData();
+        formData.append("id", id);
+        formData.append("title", finalTitle);
+        formData.append("composer", finalComposer);
+        formData.append("credit", "Converted from PDF on KlavierXML");
+        formData.append("filename", filename);
+        formData.append("added", new Date().toISOString().slice(0, 10));
+        formData.append(
+          "license",
+          "Uploaded by a community member. Only share files you have rights to distribute."
+        );
+        formData.append("file", mxl.blob, filename);
+
+        status.textContent = "Publishing to the exchange…";
+        const uploadRes = await fetch(apiBase() + "/exchange.php", {
+          method: "POST",
+          body: formData,
+        });
+        const uploadBody = await uploadRes.json().catch(() => ({}));
+        if (!uploadRes.ok) {
+          throw new Error(uploadBody.error || "Could not publish to the exchange.");
+        }
+        return {
+          published: true,
+          skipped: false,
+          message:
+            "Published to the exchange as “" +
+            finalComposer +
+            " — " +
+            finalTitle +
+            "”.",
+        };
+      }
+
+      const IMAGE_EXT = new Set(["jpg", "jpeg", "png", "tif", "tiff"]);
+      const MAX_PAGES = 40;
+
+      function fileExt(name) {
+        const parts = String(name || "").toLowerCase().split(".");
+        return parts.length > 1 ? parts.pop() : "";
+      }
+
+      function isPdfFile(file) {
+        return fileExt(file.name) === "pdf" || file.type === "application/pdf";
+      }
+
+      function isImageFile(file) {
+        const ext = fileExt(file.name);
+        return IMAGE_EXT.has(ext) || String(file.type || "").startsWith("image/");
+      }
+
+      function naturalNameCompare(a, b) {
+        return String(a).localeCompare(String(b), undefined, {
+          numeric: true,
+          sensitivity: "base",
+        });
+      }
+
+      function selectedUpload() {
+        const list = Array.from(fileInput.files || []);
+        if (!list.length) return { error: "Choose a PDF or page images first." };
+        const pdfs = list.filter(isPdfFile);
+        const images = list.filter(isImageFile);
+        if (pdfs.length && images.length) {
+          return {
+            error: "Upload either one PDF, or page images — not both at once.",
+          };
+        }
+        if (pdfs.length > 1) {
+          return { error: "Upload only one PDF at a time." };
+        }
+        if (pdfs.length === 1) {
+          return { kind: "pdf", files: [pdfs[0]] };
+        }
+        if (!images.length) {
+          return { error: "Only PDF, JPG, PNG, or TIFF files are accepted." };
+        }
+        if (images.length > MAX_PAGES) {
+          return { error: "Too many pages (max " + MAX_PAGES + ")." };
+        }
+        images.sort((a, b) => naturalNameCompare(a.name, b.name));
+        return { kind: "images", files: images };
+      }
+
+      function describeSelection(selection) {
+        if (!selection || selection.error) return "No file chosen";
+        if (selection.kind === "pdf") return selection.files[0].name;
+        if (selection.files.length === 1) return selection.files[0].name;
+        return (
+          selection.files.length +
+          " pages: " +
+          selection.files.map((f) => f.name).join(", ")
+        );
       }
 
       fileInput.addEventListener("change", () => {
-        const file = fileInput.files && fileInput.files[0];
-        fileName.textContent = file ? file.name : "No file chosen";
+        const selection = selectedUpload();
+        fileName.textContent = describeSelection(selection);
+        if (selection.error && (fileInput.files || []).length) {
+          status.textContent = selection.error;
+        }
       });
 
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
-        const file = fileInput.files && fileInput.files[0];
-        if (!file) {
-          status.textContent = "Choose a PDF first.";
+        const selection = selectedUpload();
+        if (selection.error) {
+          status.textContent = selection.error;
+          return;
+        }
+
+        const wantExchange = Boolean(toExchangeInput?.checked);
+        if (wantExchange && !exchangeRightsInput?.checked) {
+          status.textContent =
+            "Confirm that you have the rights to upload and share before publishing to the exchange.";
+          exchangeRightsInput?.focus();
           return;
         }
 
         const body = new FormData();
-        body.append("pdf", file, file.name);
+        let totalBytes = 0;
+        if (selection.kind === "pdf") {
+          const file = selection.files[0];
+          totalBytes = file.size;
+          body.append("pdf", file, file.name);
+        } else {
+          selection.files.forEach((file) => {
+            totalBytes += file.size;
+            body.append("pages[]", file, file.name);
+          });
+        }
         const title = document.getElementById("pdf-title").value.trim();
         const composer = document.getElementById("pdf-composer").value.trim();
         if (title) body.append("title", title);
@@ -390,9 +748,14 @@
         submitBtn.disabled = true;
         showProgress();
         const startedAt = Date.now();
-        let estimate = estimateFromFileSize(file.size);
+        let estimate = estimateFromFileSize(totalBytes);
+        const uploadLabel =
+          selection.kind === "pdf"
+            ? "Uploading PDF…"
+            : "Uploading " + selection.files.length + " page images…";
         status.textContent =
-          "Uploading PDF… ETA ~" +
+          uploadLabel +
+          " ETA ~" +
           formatElapsed(estimate.estimatedSeconds * 1000) +
           " (≈" +
           estimate.estimatedMeasures +
@@ -427,16 +790,54 @@
           status.textContent = statusLine(0, estimate, started);
 
           const done = await pollJob(started.jobId, startedAt, estimate);
+          const nameHint =
+            selection.kind === "pdf"
+              ? selection.files[0].name
+              : selection.files[0].name.replace(/\.[^.]+$/, "") || "score";
           const fallbackName =
             (done && done.downloadName) ||
-            buildDownloadName(title, composer, file.name);
-          const downloaded = await downloadJob(started.jobId, fallbackName);
+            buildDownloadName(title, composer, nameHint);
+          const fetched = await fetchJobXml(started.jobId, fallbackName);
+          const xmlText = await fetched.blob.text();
+          const unusable = musicXmlUnusableReason(xmlText);
+          if (unusable) {
+            throw new Error(
+              "OMR finished but the MusicXML is not usable: " +
+                unusable +
+                ". Nothing was downloaded or published. Try a clearer scan, or convert page-by-page."
+            );
+          }
+          const usableBlob = new Blob([xmlText], {
+            type: "application/vnd.recordare.musicxml+xml",
+          });
+          triggerBrowserDownload(usableBlob, fetched.downloadName);
 
           finishProgress();
-          status.textContent =
+          let message =
             "Done. Downloaded " +
-            downloaded.downloadName +
-            ". Open it in Klavier.";
+            fetched.downloadName +
+            ". Open it in Klavier or share it on the exchange.";
+
+          if (wantExchange) {
+            try {
+              const result = await publishConvertedToExchange(
+                usableBlob,
+                title,
+                composer,
+                nameHint
+              );
+              message += " " + result.message;
+            } catch (publishErr) {
+              message +=
+                " Exchange upload failed: " +
+                (publishErr && publishErr.message
+                  ? publishErr.message
+                  : "unknown error") +
+                ".";
+            }
+          }
+
+          status.textContent = message;
         } catch (err) {
           hideProgress();
           let message =

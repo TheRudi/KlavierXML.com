@@ -10,7 +10,7 @@
     />
     <link rel="canonical" href="https://klavierxml.com/exchange.html" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=edit1" />
+    <link rel="stylesheet" href="styles.css?v=nopersonal1" />
   </head>
   <body class="page-exchange">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -20,11 +20,12 @@
       <nav class="nav-links" aria-label="Primary">
         <a href="index.html#musicxml">MusicXML</a>
         <a href="index.html#get-songs">Get songs</a>
-        <a href="licenses.html">Licenses</a>
+        <a href="exchange.html" aria-current="page">Exchange</a>
+        <a href="manual.html">Manual</a>
+        <a href="references.html">References</a>
         <a class="nav-cta" href="index.html#privacy">Privacy</a>
       </nav>
     </header>
-    <p class="site-disclaimer" role="note">Only for personal use</p>
 
     <main id="main" class="exchange-main">
       <header class="legal-hero">
@@ -197,6 +198,15 @@
           />
         </label>
 
+        <div class="library-admin-actions" id="library-admin-actions" hidden>
+          <button type="button" class="btn btn-primary" id="admin-download-all">
+            Download all as ZIP
+          </button>
+          <button type="button" class="btn btn-ghost" id="admin-delete-all">
+            Delete all scores
+          </button>
+        </div>
+
         <ul class="exchange-list" id="exchange-list"></ul>
         <p class="library-empty" id="library-empty" hidden>
           No scores match this view yet. Upload an XML or MXL file to get
@@ -317,7 +327,11 @@
         <p>
           <a href="index.html">Home</a>
           ·
-          <a href="licenses.html">Licenses</a>
+          <a href="exchange.html">Exchange</a>
+          ·
+          <a href="manual.html">Manual</a>
+          ·
+          <a href="references.html">References</a>
           · © <span id="year"></span> Rüdiger Lueg
         </p>
         <p class="contact-line">
@@ -332,6 +346,6 @@
     <script src="app.js?v=viewer1" defer></script>
     <script src="exchange-config.js?v=preview2" defer></script>
     <script src="player.js?v=preview2" defer></script>
-    <script src="exchange.js?v=edit2" defer></script>
+    <script src="exchange.js?v=meta3" defer></script>
   </body>
 </html>
