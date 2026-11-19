@@ -17,7 +17,7 @@
     <meta property="og:url" content="https://klavierxml.com" />
     <link rel="canonical" href="https://klavierxml.com/" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=rights1" />
+    <link rel="stylesheet" href="styles.css?v=nopersonal1" />
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -30,12 +30,11 @@
         <a href="#why">Why</a>
         <a href="#does">What it does</a>
         <a href="#watch">Watch</a>
-        <a href="#scores">Scores</a>
-        <a href="licenses.html">Licenses</a>
+        <a href="manual.html">Manual</a>
+        <a href="references.html">References</a>
         <a class="nav-cta" href="#privacy">Privacy</a>
       </nav>
     </header>
-    <p class="site-disclaimer" role="note">Only for personal use</p>
 
     <main id="main">
       <section class="hero" aria-label="Introduction">
@@ -52,13 +51,14 @@
           </div>
         </div>
 
-        <div class="piano-stage" aria-hidden="true">
-          <div class="piano">
-            <div class="piano-body">
-              <div class="fallboard"></div>
-              <div class="keys" id="piano-keys"></div>
-            </div>
-          </div>
+        <div class="piano-stage">
+          <img
+            class="hero-piano"
+            src="images/hero-piano.jpg"
+            width="1400"
+            height="1320"
+            alt="Bösendorfer grand piano"
+          />
         </div>
       </section>
 
@@ -93,158 +93,15 @@
             and compressed MusicXML (<code>.mxl</code>). Save the file on your
             iPad, then open it from the app.
           </p>
-
-          <div class="get-paths">
-            <article class="get-path">
-              <p class="get-path-index">01</p>
-              <h3>XML or MXL files directly</h3>
-              <ol class="get-steps">
-                <li>
-                  <span>
-                    Go to a site that offers MusicXML downloads, such as
-                    <a
-                      href="https://musescore.com/openscore"
-                      rel="noopener noreferrer"
-                      >musescore.com/openscore</a
-                    >,
-                    <a href="https://www.musicxml.com/" rel="noopener noreferrer"
-                      >musicxml.com</a
-                    >, or
-                    <a href="https://www.gutenberg.org/" rel="noopener noreferrer"
-                      >gutenberg.org</a
-                    >.
-                  </span>
-                </li>
-                <li>
-                  <span>
-                    Download the XML or MXL file, save it on your iPad, and open
-                    the file from the app.
-                  </span>
-                </li>
-              </ol>
-            </article>
-
-            <article class="get-path">
-              <p class="get-path-index">02</p>
-              <h3>Convert sheet music MP3 to XML or MXL</h3>
-              <ol class="get-steps">
-                <li>
-                  <span>
-                    Go to a site with sheet music or audio, such as
-                    <a
-                      href="https://musescore.com/openscore"
-                      rel="noopener noreferrer"
-                      >musescore.com/openscore</a
-                    >
-                    or
-                    <a
-                      href="https://www.musicnotes.com/"
-                      rel="noopener noreferrer"
-                      >musicnotes.com</a
-                    >.
-                  </span>
-                </li>
-                <li><span>Download the MP3.</span></li>
-                <li>
-                  <span>
-                    Go to
-                    <a href="https://songscription.ai/" rel="noopener noreferrer"
-                      >songscription.ai</a
-                    >, convert the MP3 to XML, save it on your iPad, and open the
-                    file from the app.
-                  </span>
-                </li>
-              </ol>
-            </article>
-
-            <article class="get-path" id="pdf-to-xml">
-              <p class="get-path-index">03</p>
-              <h3>PDF to XML</h3>
-              <ol class="get-steps">
-                <li>
-                  <span>
-                    Go to
-                    <a
-                      href="https://musescore.com/upload?format=PDF"
-                      rel="noopener noreferrer"
-                      >musescore.com/upload?format=PDF</a
-                    >.
-                  </span>
-                </li>
-                <li><span>Click <strong>+ Add files</strong>.</span></li>
-                <li>
-                  <span>
-                    Answer MuseScore.com’s questions (title, artist, and so on),
-                    then continue.
-                  </span>
-                </li>
-                <li>
-                  <span>
-                    Wait until you can click
-                    <strong>Review &amp; Publish</strong>.
-                  </span>
-                </li>
-                <li>
-                  <span>
-                    Go to <strong>Uploaded scores</strong>, open your song, and
-                    download the XML. Save it on your iPad and open it from the
-                    app.
-                  </span>
-                </li>
-              </ol>
-            </article>
-
-            <article class="get-path">
-              <p class="get-path-index">04</p>
-              <h3>3 JPGs into PDF</h3>
-              <ol class="get-steps">
-                <li>
-                  <span>
-                    On a Mac, select all JPG pages and open them with
-                    <strong>Preview</strong>.
-                  </span>
-                </li>
-                <li>
-                  <span>
-                    Open the <strong>Print</strong> dialog, then choose
-                    <strong>Save as PDF</strong>.
-                  </span>
-                </li>
-                <li>
-                  <span>
-                    Use the PDF with the
-                    <a href="#pdf-to-xml">PDF to XML</a> steps above.
-                  </span>
-                </li>
-              </ol>
-            </article>
-
-            <article class="get-path" id="pdf2xml">
-              <p class="get-path-index">05</p>
-              <h3>Convert PDF to XML on KlavierXML.com</h3>
-              <ol class="get-steps">
-                <li>
-                  <span>
-                    Go to
-                    <a href="convert.html">klavierxml.com/convert.html</a>
-                    (PDF2XML).
-                  </span>
-                </li>
-                <li>
-                  <span>
-                    Upload your score PDF (scanned pages or a PDF you made from
-                    JPGs).
-                  </span>
-                </li>
-                <li>
-                  <span>
-                    Download the MusicXML, save it on your iPad, and open it
-                    from the app.
-                  </span>
-                </li>
-              </ol>
-            </article>
-          </div>
+          <p class="section-copy">
+            Go to
+            <a
+              href="https://www.musicxml.com/music-in-musicxml/"
+              rel="noopener noreferrer"
+              >https://www.musicxml.com/music-in-musicxml/</a
+            >
+            and learn more where to get or buy XML scores.
+          </p>
         </div>
       </section>
 
@@ -271,8 +128,22 @@
                 <strong>Drill Mode</strong>
                 <ul class="clip-points">
                   <li>
-                    The app keeps anonymous practice stats so you can track
-                    progress without an account.
+                    Select a focus range by measures or chords — circle it with
+                    the lasso, or use the lowest key to start and the two
+                    highest keys to set the end of the range.
+                  </li>
+                  <li>Practice each hand separately (left, right, or both).</li>
+                  <li>
+                    Listen to the song (or just your selected range) first, then
+                    practice it yourself.
+                  </li>
+                  <li>
+                    Record your plays and play them back later — saved on your
+                    device.
+                  </li>
+                  <li>
+                    All practice time is collected and saved locally on your
+                    device. Nobody else collects that data.
                   </li>
                   <li>
                     After you play a range, you get feedback — for example, a
@@ -280,6 +151,10 @@
                   </li>
                   <li>Falling bars can be turned off when you prefer a clearer view.</li>
                   <li>Print your sheet music from the score.</li>
+                  <li>
+                    Upload and download scores from the KlavierXML exchange
+                    server.
+                  </li>
                   <li>Switch between portrait and landscape view.</li>
                   <li>Play every song with 4 different piano sounds.</li>
                 </ul>
@@ -305,6 +180,10 @@
                   </li>
                   <li>Zoom in and zoom out to read the score at your preferred size.</li>
                   <li>Print your sheet music from the score.</li>
+                  <li>
+                    Upload and download scores from the KlavierXML exchange
+                    server.
+                  </li>
                   <li>Switch between portrait and landscape view.</li>
                   <li>Play every song with 4 different piano sounds.</li>
                 </ul>
@@ -324,7 +203,6 @@
               Other apps only offer their own songs. A piece can disappear, or
               the one you want is never available.
             </li>
-            <li>The subscription is a flat $25 a year.</li>
           </ol>
         </div>
       </section>
@@ -344,63 +222,14 @@
         </div>
       </section>
 
-      <section class="section" id="scores">
-        <div class="section-inner">
-          <p class="section-kicker">Scores</p>
-          <h2 class="section-title">Two pieces to open</h2>
-          <p class="section-copy">
-            Play these scores here, or download the MusicXML files and keep them.
-          </p>
-          <ul class="score-list">
-            <li class="score-card">
-              <div>
-                <h3>Ode to Joy</h3>
-                <p>Ludwig van Beethoven · arranged for piano by Torby Brand</p>
-              </div>
-              <div class="score-actions">
-                <button
-                  type="button"
-                  class="btn btn-primary"
-                  data-play="scores/Beethoven-Ode_to_Joy.mxl"
-                >
-                  Play
-                </button>
-                <a class="btn btn-ghost" href="scores/Beethoven-Ode_to_Joy.mxl" download
-                  >Download .mxl</a
-                >
-              </div>
-              <p class="play-status" role="status"></p>
-            </li>
-            <li class="score-card">
-              <div>
-                <h3>Happy Birthday</h3>
-                <p>Hill · easy to play</p>
-              </div>
-              <div class="score-actions">
-                <button
-                  type="button"
-                  class="btn btn-primary"
-                  data-play="scores/Hill-Happy_Birthday.mxl"
-                >
-                  Play
-                </button>
-                <a class="btn btn-ghost" href="scores/Hill-Happy_Birthday.mxl" download
-                  >Download .mxl</a
-                >
-              </div>
-              <p class="play-status" role="status"></p>
-            </li>
-          </ul>
-        </div>
-      </section>
-
       <section class="section" id="privacy">
         <div class="section-inner">
           <p class="section-kicker">Privacy</p>
           <h2 class="section-title">No data collected</h2>
           <p class="privacy-copy">
             KlavierXML does not collect personal data. There is no account, no
-            analytics, and no tracking. Scores you play stay on your device.
+            analytics, and no tracking. Scores you play, practice time, and
+            recordings stay on your device — nobody else collects them.
           </p>
           <p class="privacy-copy">
             After this page has loaded, the player works offline. No internet
@@ -436,8 +265,8 @@
             notation tools, piano sounds, and scores.
           </p>
           <div class="cta-row" style="margin-top: 1.5rem">
-            <a class="btn btn-ghost" href="licenses.html"
-              >View licenses &amp; credits</a
+            <a class="btn btn-ghost" href="references.html"
+              >View references &amp; licenses</a
             >
           </div>
         </div>
@@ -448,7 +277,9 @@
       <div class="footer-inner">
         <p class="footer-brand">KlavierXML</p>
         <p>
-          <a href="licenses.html">Licenses</a>
+          <a href="manual.html">Manual</a>
+          ·
+          <a href="references.html">References</a>
           · Learn piano from MusicXML · © <span id="year"></span> Rüdiger Lueg
         </p>
         <p class="contact-line">
@@ -463,7 +294,7 @@
       </div>
     </footer>
 
-    <script src="app.js" defer></script>
-    <script src="player.js" defer></script>
+    <script src="app.js?v=grand1" defer></script>
+    <script src="player.js?v=grand1" defer></script>
   </body>
 </html>
